@@ -151,10 +151,10 @@ export default function Board() {
           <p className="text-sm text-zinc-500 dark:text-zinc-400">Personal board with drag & drop</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowCategories(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm shadow-sm hover:shadow dark:bg-zinc-900 dark:border-white/10">
+          <button onClick={() => setShowCategories(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:bg-zinc-900 dark:border-white/10 dark:text-zinc-200 dark:hover:text-white">
             <Tags size={16} /> Manage Categories
           </button>
-          <button onClick={() => setShowColumns(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm shadow-sm hover:shadow dark:bg-zinc-900 dark:border-white/10">
+          <button onClick={() => setShowColumns(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:bg-zinc-900 dark:border-white/10 dark:text-zinc-200 dark:hover:text-white">
             <SlidersHorizontal size={16} /> Manage Columns
           </button>
         </div>

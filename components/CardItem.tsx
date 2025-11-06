@@ -93,7 +93,7 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
       style={style}
       {...attributes}
       {...listeners}
-      className={`group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-all hover:bg-white/90 dark:bg-zinc-950 dark:border-white/10 ${
+      className={`group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-all hover:bg-zinc-50 dark:bg-zinc-950 dark:border-white/10 dark:hover:bg-zinc-900/80 ${
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
