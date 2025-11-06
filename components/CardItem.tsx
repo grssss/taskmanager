@@ -15,16 +15,22 @@ type Props = {
   onDelete: () => void;
 };
 
-export default function CardItem({ columnId, card, categories, onEdit, onDelete }: Props) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `card:${columnId}:${card.id}` });
-  const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
+type CardBodyProps = {
+  card: Card;
+  categories: Category[];
+  onEdit?: () => void;
+  onDelete?: () => void;
+  showActions?: boolean;
+};
+
+function CardBody({ card, categories, onEdit, onDelete, showActions = true }: CardBodyProps) {
   const cardCategories = categories.filter((c) => card.categoryIds?.includes(c.id));
   const createdAgo = formatDistanceToNow(new Date(card.createdAt), { addSuffix: true });
   const due = card.dueDate ? new Date(card.dueDate) : undefined;
   const overdue = due ? isAfter(new Date(), due) : false;
 
   return (
-    <article ref={setNodeRef} style={style} {...attributes} {...listeners} className="group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-colors hover:bg-white/90 dark:bg-zinc-950 dark:border-white/10">
+    <>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{card.title}</h3>
@@ -52,10 +58,12 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
             ) : null}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button onClick={onEdit} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Edit"><Edit3 size={16} /></button>
-          <button onClick={onDelete} className="rounded-md p-1 hover:bg-zinc-100 text-red-600 dark:hover:bg-zinc-800" aria-label="Delete"><Trash2 size={16} /></button>
-        </div>
+        {showActions ? (
+          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button onClick={onEdit} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Edit"><Edit3 size={16} /></button>
+            <button onClick={onDelete} className="rounded-md p-1 hover:bg-zinc-100 text-red-600 dark:hover:bg-zinc-800" aria-label="Delete"><Trash2 size={16} /></button>
+          </div>
+        ) : null}
       </div>
       {card.links && card.links.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
@@ -66,6 +74,43 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
           ))}
         </div>
       ) : null}
+    </>
+  );
+}
+
+export default function CardItem({ columnId, card, categories, onEdit, onDelete }: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `card:${columnId}:${card.id}` });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? "transform 180ms cubic-bezier(0.2, 0, 0, 1)",
+    cursor: isDragging ? "grabbing" : "grab",
+    opacity: isDragging ? 0.4 : 1,
+  } as React.CSSProperties;
+
+  return (
+    <article
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-all hover:bg-white/90 dark:bg-zinc-950 dark:border-white/10 ${
+        isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
+      }`}
+    >
+      <CardBody card={card} categories={categories} onEdit={onEdit} onDelete={onDelete} />
+    </article>
+  );
+}
+
+type CardPreviewProps = {
+  card: Card;
+  categories: Category[];
+};
+
+export function CardPreview({ card, categories }: CardPreviewProps) {
+  return (
+    <article className="pointer-events-none w-full max-w-[360px] rounded-xl border border-black/10 bg-white p-3 shadow-lg dark:bg-zinc-950 dark:border-white/10">
+      <CardBody card={card} categories={categories} showActions={false} />
     </article>
   );
 }

@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { arrayMove, SortableContext } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragCancelEvent,
+  DragOverlay,
+  DropAnimation,
+  KeyboardSensor,
+  PointerSensor,
+  defaultDropAnimation,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Plus, SlidersHorizontal, Tags } from "lucide-react";
 import { useLocalStorage } from "@/lib/useLocalStorage";
 import { BoardState, Card, Column, Category, defaultState } from "@/lib/types";
@@ -10,6 +22,7 @@ import ColumnView from "@/components/ColumnView";
 import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
+import { CardPreview } from "@/components/CardItem";
 
 function uid() {
   return Math.random().toString(36).slice(2, 9);
@@ -21,9 +34,20 @@ export default function Board() {
   const [showCategories, setShowCategories] = useState(false);
   const [editingCard, setEditingCard] = useState<null | { id?: string; columnId?: string }>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
+  const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
 
   const columnIds = useMemo(() => state.columns.map((c) => c.id), [state.columns]);
   const categoryMap = useMemo(() => new Map(state.categories.map((c) => [c.id, c])), [state.categories]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const dropAnimation: DropAnimation = {
+    ...defaultDropAnimation,
+    duration: 220,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  };
 
   useEffect(() => {
     setActiveFilters((prev) => prev.filter((id) => categoryMap.has(id)));
@@ -63,6 +87,18 @@ export default function Board() {
       columns[toIdx] = to;
       return { ...prev, columns };
     });
+    setActiveDragCard(null);
+  };
+
+  const onDragStart = (event: DragStartEvent) => {
+    const [type, , cardId] = String(event.active.id).split(":");
+    if (type !== "card") return;
+    const card = state.cards[cardId];
+    if (card) setActiveDragCard(card);
+  };
+
+  const onDragCancel = (_event: DragCancelEvent) => {
+    setActiveDragCard(null);
   };
 
   const handleCreate = (columnId: string) => setEditingCard({ columnId });
@@ -124,30 +160,46 @@ export default function Board() {
         </div>
       </header>
 
-      <section className="mb-6 flex flex-wrap items-center gap-2">
-        <FilterChip
-          selected={activeFilters.length === 0}
-          label="All"
-          onClick={() => setActiveFilters([])}
-        />
-        {state.categories.map((category) => (
+      <section className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <FilterChip
-            key={category.id}
-            label={category.name}
-            color={category.color}
-            selected={activeFilters.includes(category.id)}
-            onClick={() =>
-              setActiveFilters((prev) =>
-                prev.includes(category.id)
-                  ? prev.filter((id) => id !== category.id)
-                  : [...prev, category.id],
-              )
-            }
+            selected={activeFilters.length === 0}
+            label="All"
+            onClick={() => setActiveFilters([])}
           />
-        ))}
+          {state.categories.map((category) => (
+            <FilterChip
+              key={category.id}
+              label={category.name}
+              color={category.color}
+              selected={activeFilters.includes(category.id)}
+              onClick={() =>
+                setActiveFilters((prev) =>
+                  prev.includes(category.id)
+                    ? prev.filter((id) => id !== category.id)
+                    : [...prev, category.id],
+                )
+              }
+            />
+          ))}
+        </div>
+        <label className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm text-zinc-600 shadow-sm transition hover:border-black/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-white/20">
+          <input
+            type="checkbox"
+            checked={showHighPriorityOnly}
+            onChange={(event) => setShowHighPriorityOnly(event.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 text-black focus:ring-black dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:focus:ring-white"
+          />
+          High priority only
+        </label>
       </section>
 
-      <DndContext onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={onDragCancel}
+      >
         <div className="flex gap-4 overflow-x-auto pb-2">
           <SortableContext items={columnIds}>
             {state.columns.map((col) => (
@@ -159,6 +211,10 @@ export default function Board() {
                     .map((id) => state.cards[id])
                     .filter(Boolean)
                     .filter((card) => {
+                      if (!card) return false;
+                      if (showHighPriorityOnly && !(card.priority === "high" || card.priority === "critical")) {
+                        return false;
+                      }
                       if (activeFilters.length === 0) return true;
                       const categoriesForCard =
                         card?.categoryIds ??
@@ -175,6 +231,9 @@ export default function Board() {
             ))}
           </SortableContext>
         </div>
+        <DragOverlay dropAnimation={dropAnimation}>
+          {activeDragCard ? <CardPreview card={activeDragCard} categories={state.categories} /> : null}
+        </DragOverlay>
       </DndContext>
 
       <UpsertCardModal
