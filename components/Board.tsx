@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -14,7 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Tags, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Plus, SlidersHorizontal, Tags, Cloud, CloudOff, Loader2, FolderCog } from "lucide-react";
 import { useSupabaseStorage } from "@/lib/useSupabaseStorage";
 import {
   AppState,
@@ -103,9 +103,10 @@ function createProject(name: string, board: BoardState = defaultState(), id?: st
 }
 
 export default function Board() {
+  const initialAppState = useMemo(() => defaultAppState(), []);
   const [storedState, setStoredState, loadingStorage, syncStatus] = useSupabaseStorage<AppState>(
     "kanban-state",
-    defaultAppState(),
+    initialAppState,
   );
   const [showColumns, setShowColumns] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
@@ -113,8 +114,12 @@ export default function Board() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     setStoredState((prev) => {
       if (isAppState(prev)) {
         if (prev.projects.length > 0) return prev;
@@ -135,23 +140,30 @@ export default function Board() {
         projects: [migratedProject],
       };
     });
-  }, [storedState, setStoredState]);
+  }, [setStoredState]);
 
   const ready = isAppState(storedState) && storedState.projects.length > 0;
   const appState: AppState = ready ? (storedState as AppState) : defaultAppState();
   const activeProject =
     appState.projects.find((project) => project.id === appState.activeProjectId) ?? appState.projects[0];
   const board = activeProject.board;
+  const lastCheckedProjectId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isAppState(storedState) || storedState.projects.length === 0) return;
+
+    // Only check if activeProjectId has changed
+    if (lastCheckedProjectId.current === storedState.activeProjectId) return;
+    lastCheckedProjectId.current = storedState.activeProjectId;
+
     if (storedState.projects.some((project) => project.id === storedState.activeProjectId)) return;
+
     setStoredState((prev) => {
       if (!isAppState(prev) || prev.projects.length === 0) return prev;
       if (prev.projects.some((project) => project.id === prev.activeProjectId)) return prev;
       return { ...prev, activeProjectId: prev.projects[0].id };
     });
-  }, [storedState, setStoredState]);
+  }, [storedState.activeProjectId, setStoredState]);
 
   const columnIds = useMemo(() => board.columns.map((column) => column.id), [board.columns]);
   const categoryMap = useMemo(
@@ -367,10 +379,18 @@ export default function Board() {
           </select>
           <button
             type="button"
-            onClick={handleAddProject}
+            onClick={() => {/* TODO: Implement manage projects modal */}}
             className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
           >
-            <Plus size={16} /> New Project
+            <FolderCog size={16} /> Manage Projects
+          </button>
+          <button
+            type="button"
+            onClick={handleAddProject}
+            className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white p-2 text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            title="New Project"
+          >
+            <Plus size={16} />
           </button>
 
           {/* Sync Status Indicator */}

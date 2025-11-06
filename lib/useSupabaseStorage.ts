@@ -15,9 +15,10 @@ export function useSupabaseStorage<T extends AppState>(
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [lastSynced, setLastSynced] = useState<Date | null>(null)
-  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const isMountedRef = useRef(true)
   const hasLoadedRef = useRef(false)
+  const currentStateRef = useRef<T>(initialValue)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load data from Supabase when user logs in
   useEffect(() => {
@@ -69,7 +70,9 @@ export function useSupabaseStorage<T extends AppState>(
                 if (insertError) {
                   console.error('Failed to insert data:', insertError)
                 } else if (isMountedRef.current) {
-                  setState(parsed as T)
+                  const migratedData = parsed as T
+                  setState(migratedData)
+                  currentStateRef.current = migratedData
                   // Clear localStorage after successful migration
                   localStorage.removeItem(key)
                   console.log('Data migrated successfully and localStorage cleared!')
@@ -91,6 +94,7 @@ export function useSupabaseStorage<T extends AppState>(
                 console.error('Failed to create initial data:', insertError)
               } else if (isMountedRef.current) {
                 setState(initialValue)
+                currentStateRef.current = initialValue
               }
             }
           } else {
@@ -98,7 +102,9 @@ export function useSupabaseStorage<T extends AppState>(
           }
         } else if (data && isMountedRef.current) {
           // Successfully loaded from Supabase - clear any old localStorage data
-          setState((data as any).app_state as T)
+          const loadedData = (data as any).app_state as T
+          setState(loadedData)
+          currentStateRef.current = loadedData
           localStorage.removeItem(key)
           console.log('Data loaded from Supabase successfully!')
         }
@@ -117,13 +123,14 @@ export function useSupabaseStorage<T extends AppState>(
     return () => {
       isMountedRef.current = false
     }
-  }, [user, key])
+  }, [user, key, initialValue])
 
-  // Save data to Supabase (debounced)
+  // Save data to Supabase
   const saveToSupabase = useCallback(
-    async (newState: T) => {
+    async (stateToSave?: T) => {
       if (!user) return
 
+      const dataToSave = stateToSave || currentStateRef.current
       setSyncing(true)
       setSyncError(null)
 
@@ -131,7 +138,7 @@ export function useSupabaseStorage<T extends AppState>(
         const { error } = await (supabase as any)
           .from('user_data')
           .update({
-            app_state: newState,
+            app_state: dataToSave,
             updated_at: new Date().toISOString(),
           } as any)
           .eq('user_id', user.id)
@@ -142,6 +149,7 @@ export function useSupabaseStorage<T extends AppState>(
         } else {
           setLastSynced(new Date())
           setSyncError(null)
+          console.log('Data saved to Supabase successfully')
         }
       } catch (err) {
         console.error('Unexpected error saving data:', err)
@@ -153,25 +161,71 @@ export function useSupabaseStorage<T extends AppState>(
     [user]
   )
 
-  // Custom setState that also syncs to Supabase
+  // Debounced save - triggers 2 seconds after last change
+  const triggerDebouncedSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      console.log('Debounced save triggered')
+      saveToSupabase()
+    }, 2000) // Save 2 seconds after last change
+  }, [saveToSupabase])
+
+  // Save when page becomes hidden (tab switch, minimize, close)
+  useEffect(() => {
+    if (!user || !hasLoadedRef.current) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        console.log('Page hidden - triggering immediate save')
+        // Clear any pending debounced save
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current)
+          saveTimeoutRef.current = null
+        }
+
+        // Use sendBeacon for reliable save during page unload
+        // This ensures the request completes even after the page closes
+        try {
+          const blob = new Blob([JSON.stringify({
+            userId: user.id,
+            appState: currentStateRef.current
+          })], { type: 'application/json' })
+
+          const success = navigator.sendBeacon('/api/save-state', blob)
+          console.log('sendBeacon result:', success)
+
+          // Fallback to regular save if sendBeacon fails
+          if (!success) {
+            saveToSupabase(currentStateRef.current)
+          }
+        } catch (error) {
+          console.error('sendBeacon failed, using fallback:', error)
+          saveToSupabase(currentStateRef.current)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user, saveToSupabase])
+
+  // Custom setState that updates local state immediately and triggers debounced save
   const setStateAndSync = useCallback(
     (value: T | ((prev: T) => T)) => {
       setState((prev) => {
         const newState = typeof value === 'function' ? (value as (prev: T) => T)(prev) : value
-
-        // Debounce the save to avoid too many API calls
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current)
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-          saveToSupabase(newState)
-        }, 500) // Save after 500ms of inactivity
-
+        // Update ref for saves
+        currentStateRef.current = newState
+        // Trigger debounced save
+        triggerDebouncedSave()
         return newState
       })
     },
-    [saveToSupabase]
+    [triggerDebouncedSave]
   )
 
   return [state, setStateAndSync, loading, { syncing, error: syncError, lastSynced }]
