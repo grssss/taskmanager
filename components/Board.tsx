@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Plus, SlidersHorizontal, Tags } from "lucide-react";
-import { useLocalStorage } from "@/lib/useLocalStorage";
+import { useSupabaseStorage } from "@/lib/useSupabaseStorage";
 import {
   AppState,
   BoardState,
@@ -31,6 +31,9 @@ import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
 import { CardPreview } from "@/components/CardItem";
+import { NaturalLanguageInput } from "@/components/NaturalLanguageInput";
+import { ProcessedQuery } from "@/lib/nlp";
+import { useQueryHistory } from "@/lib/useQueryHistory";
 
 const DEFAULT_PROJECT_NAME = "Personal";
 const DEFAULT_MIGRATED_PROJECT_ID = "project-default";
@@ -103,7 +106,7 @@ function createProject(name: string, board: BoardState = defaultState(), id?: st
 }
 
 export default function Board() {
-  const [storedState, setStoredState] = useLocalStorage<AppState | BoardState>(
+  const [storedState, setStoredState, loadingStorage] = useSupabaseStorage<AppState>(
     "kanban-state",
     defaultAppState(),
   );
@@ -113,6 +116,9 @@ export default function Board() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
+  const [searchKeywords, setSearchKeywords] = useState<string[]>([]);
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ start?: Date; end?: Date } | null>(null);
+  const { addQuery } = useQueryHistory();
 
   useEffect(() => {
     setStoredState((prev) => {
@@ -331,8 +337,95 @@ export default function Board() {
     updateActiveBoard((prev) => ({ ...prev, categories }));
   };
 
-  if (!ready) {
-    return null;
+  const handleNaturalLanguageQuery = (result: ProcessedQuery) => {
+    // Track query in history
+    let wasSuccessful = true;
+
+    try {
+      // Process each action from the NLP result
+      for (const action of result.actions) {
+        switch (action.type) {
+        case 'search':
+          // Set search keywords for filtering
+          if (action.payload.keywords) {
+            setSearchKeywords(action.payload.keywords);
+          }
+          break;
+
+        case 'filter':
+          // Apply filters
+          if (action.payload.categories) {
+            setActiveFilters(action.payload.categories);
+          }
+          if (action.payload.priority) {
+            // Set high priority filter if priority is high or critical
+            setShowHighPriorityOnly(
+              action.payload.priority === 'high' || action.payload.priority === 'critical'
+            );
+          }
+          if (action.payload.dateRange) {
+            setDateRangeFilter(action.payload.dateRange);
+          }
+          break;
+
+        case 'clear_filters':
+          // Clear all filters
+          setActiveFilters([]);
+          setShowHighPriorityOnly(false);
+          setSearchKeywords([]);
+          setDateRangeFilter(null);
+          break;
+
+        case 'create_task':
+          // Create a new task with the extracted data
+          const columnId = action.payload.columnId || board.columns[0]?.id;
+          if (columnId) {
+            const newCard: Card = {
+              id: uid(),
+              title: action.payload.title,
+              description: action.payload.description,
+              categoryIds: action.payload.categoryIds || [],
+              priority: action.payload.priority || 'medium',
+              createdAt: new Date().toISOString(),
+              dueDate: action.payload.dueDate,
+              links: action.payload.links || [],
+            };
+
+            updateActiveBoard((prev) => {
+              const cards = { ...prev.cards, [newCard.id]: newCard };
+              const columns = prev.columns.map((column) => {
+                if (column.id === columnId) {
+                  return { ...column, cardIds: [newCard.id, ...column.cardIds] };
+                }
+                return column;
+              });
+              return { ...prev, cards, columns };
+            });
+          }
+          break;
+
+        default:
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error processing natural language query:', error);
+      wasSuccessful = false;
+    } finally {
+      // Add query to history for analytics
+      addQuery(result.rawQuery, result, wasSuccessful);
+    }
+  };
+
+  if (!ready || loadingStorage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading your data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -389,6 +482,17 @@ export default function Board() {
         </div>
       </header>
 
+      {/* Natural Language Input */}
+      <section className="mb-6">
+        <NaturalLanguageInput
+          categories={board.categories}
+          columns={board.columns}
+          cards={board.cards}
+          onQueryProcessed={handleNaturalLanguageQuery}
+          className="max-w-3xl"
+        />
+      </section>
+
       <section className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <FilterChip
@@ -437,17 +541,51 @@ export default function Board() {
                     .filter(Boolean)
                     .filter((card) => {
                       if (!card) return false;
+
+                      // Priority filter
                       if (showHighPriorityOnly && !(card.priority === "high" || card.priority === "critical")) {
                         return false;
                       }
-                      if (activeFiltersSafe.length === 0) return true;
-                      const categoriesForCard =
-                        card.categoryIds ??
-                        ((card as unknown as { categoryId?: string }).categoryId
-                          ? [((card as unknown as { categoryId?: string }).categoryId as string)]
-                          : []);
-                      if (!categoriesForCard || categoriesForCard.length === 0) return false;
-                      return categoriesForCard.some((categoryId) => activeFiltersSafe.includes(categoryId));
+
+                      // Category filter
+                      if (activeFiltersSafe.length > 0) {
+                        const categoriesForCard =
+                          card.categoryIds ??
+                          ((card as unknown as { categoryId?: string }).categoryId
+                            ? [((card as unknown as { categoryId?: string }).categoryId as string)]
+                            : []);
+                        if (!categoriesForCard || categoriesForCard.length === 0) return false;
+                        if (!categoriesForCard.some((categoryId) => activeFiltersSafe.includes(categoryId))) {
+                          return false;
+                        }
+                      }
+
+                      // Search keywords filter
+                      if (searchKeywords.length > 0) {
+                        const searchText = `${card.title} ${card.description || ''}`.toLowerCase();
+                        const hasMatch = searchKeywords.some((keyword) =>
+                          searchText.includes(keyword.toLowerCase())
+                        );
+                        if (!hasMatch) return false;
+                      }
+
+                      // Date range filter
+                      if (dateRangeFilter) {
+                        if (card.dueDate) {
+                          const dueDate = new Date(card.dueDate);
+                          if (dateRangeFilter.start && dueDate < dateRangeFilter.start) {
+                            return false;
+                          }
+                          if (dateRangeFilter.end && dueDate > dateRangeFilter.end) {
+                            return false;
+                          }
+                        } else if (dateRangeFilter.start || dateRangeFilter.end) {
+                          // If card has no due date but date filter is active, exclude it
+                          return false;
+                        }
+                      }
+
+                      return true;
                     })}
                   categories={board.categories}
                   onAdd={() => handleCreate(column.id)}
