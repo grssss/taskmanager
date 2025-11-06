@@ -3,9 +3,28 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow, isAfter } from "date-fns";
-import { Edit3, Link as LinkIcon, Trash2 } from "lucide-react";
+import { Link as LinkIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Card, Category } from "@/lib/types";
+import { Card, Category, Priority } from "@/lib/types";
+
+const PRIORITY_STYLES: Record<Priority, { label: string; className: string }> = {
+  low: {
+    label: "Low",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  },
+  medium: {
+    label: "Medium",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  },
+  high: {
+    label: "High",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  },
+  critical: {
+    label: "Critical",
+    className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  },
+};
 
 type Props = {
   columnId: string;
@@ -18,12 +37,11 @@ type Props = {
 type CardBodyProps = {
   card: Card;
   categories: Category[];
-  onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
 };
 
-function CardBody({ card, categories, onEdit, onDelete, showActions = true }: CardBodyProps) {
+function CardBody({ card, categories, onDelete, showActions = true }: CardBodyProps) {
   const cardCategories = categories.filter((c) => card.categoryIds?.includes(c.id));
   const createdAgo = formatDistanceToNow(new Date(card.createdAt), { addSuffix: true });
   const due = card.dueDate ? new Date(card.dueDate) : undefined;
@@ -50,6 +68,10 @@ function CardBody({ card, categories, onEdit, onDelete, showActions = true }: Ca
                 {category.name}
               </span>
             ))}
+            {cardCategories.length > 0 ? <span className="basis-full" aria-hidden /> : null}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PRIORITY_STYLES[card.priority].className}`}>
+              {PRIORITY_STYLES[card.priority].label}
+            </span>
             <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">Created {createdAgo}</span>
             {due ? (
               <span className={`rounded-full px-2 py-0.5 text-[10px] ${overdue ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
@@ -60,8 +82,16 @@ function CardBody({ card, categories, onEdit, onDelete, showActions = true }: Ca
         </div>
         {showActions ? (
           <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <button onClick={onEdit} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Edit"><Edit3 size={16} /></button>
-            <button onClick={onDelete} className="rounded-md p-1 hover:bg-zinc-100 text-red-600 dark:hover:bg-zinc-800" aria-label="Delete"><Trash2 size={16} /></button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete?.();
+              }}
+              className="rounded-md p-1 hover:bg-zinc-100 text-red-600 dark:hover:bg-zinc-800"
+              aria-label="Delete"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         ) : null}
       </div>
@@ -93,11 +123,15 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
       style={style}
       {...attributes}
       {...listeners}
+      onClick={(event) => {
+        event.stopPropagation();
+        onEdit();
+      }}
       className={`group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-all hover:bg-zinc-50 dark:bg-zinc-950 dark:border-white/10 dark:hover:bg-zinc-900/80 ${
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
-      <CardBody card={card} categories={categories} onEdit={onEdit} onDelete={onDelete} />
+      <CardBody card={card} categories={categories} onDelete={onDelete} />
     </article>
   );
 }

@@ -13,7 +13,10 @@ type Props = {
 
 export default function ManageColumnsModal({ open, columns, onSave, onClose }: Props) {
   const [local, setLocal] = useState<Column[]>(columns);
-  useEffect(() => setLocal(columns), [columns, open]);
+  useEffect(() => {
+    if (!open) return;
+    setLocal(columns);
+  }, [columns, open]);
 
   const add = () => setLocal((l) => [...l, { id: slug(`Column ${l.length + 1}`), name: `Column ${l.length + 1}`, cardIds: [] }]);
   const remove = (id: string) => setLocal((l) => l.filter((c) => c.id !== id));

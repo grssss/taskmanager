@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
-  DragStartEvent,
-  DragCancelEvent,
   DragOverlay,
+  DragStartEvent,
   DropAnimation,
   KeyboardSensor,
   PointerSensor,
@@ -17,19 +16,97 @@ import {
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Plus, SlidersHorizontal, Tags } from "lucide-react";
 import { useLocalStorage } from "@/lib/useLocalStorage";
-import { BoardState, Card, Column, Category, defaultState } from "@/lib/types";
+import {
+  AppState,
+  BoardState,
+  Card,
+  Category,
+  Column,
+  Project,
+  defaultAppState,
+  defaultState,
+} from "@/lib/types";
 import ColumnView from "@/components/ColumnView";
 import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
 import { CardPreview } from "@/components/CardItem";
 
+const DEFAULT_PROJECT_NAME = "Personal";
+const DEFAULT_MIGRATED_PROJECT_ID = "project-default";
+
 function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
+function isAppState(value: AppState | BoardState): value is AppState {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "projects" in value &&
+    Array.isArray((value as AppState).projects)
+  );
+}
+
+function isBoardState(value: unknown): value is BoardState {
+  if (!value || typeof value !== "object") return false;
+  const maybe = value as BoardState;
+  return Array.isArray(maybe.columns) && typeof maybe.cards === "object" && maybe.cards !== null;
+}
+
+function sanitizeBoardState(value: unknown): BoardState {
+  if (!isBoardState(value)) {
+    return defaultState();
+  }
+
+  const fallback = defaultState();
+  const normalizedColumns =
+    value.columns.length > 0
+      ? value.columns.map((column) => ({
+          id: column.id,
+          name: column.name,
+          cardIds: Array.isArray(column.cardIds) ? [...column.cardIds] : [],
+        }))
+      : fallback.columns;
+
+  const normalizedCategories =
+    value.categories && value.categories.length > 0
+      ? value.categories.map((category) => ({ ...category }))
+      : fallback.categories;
+
+  const normalizedCards: Record<string, Card> = {};
+  if (value.cards && typeof value.cards === "object") {
+    for (const [id, card] of Object.entries(value.cards)) {
+      if (!card || typeof card !== "object") continue;
+      const cardValue = card as Card;
+      normalizedCards[id] = {
+        ...cardValue,
+        categoryIds: Array.isArray(cardValue.categoryIds) ? [...cardValue.categoryIds] : cardValue.categoryIds,
+        links: Array.isArray(cardValue.links) ? cardValue.links.map((link) => ({ ...link })) : cardValue.links,
+      };
+    }
+  }
+
+  return {
+    columns: normalizedColumns,
+    cards: normalizedCards,
+    categories: normalizedCategories,
+  };
+}
+
+function createProject(name: string, board: BoardState = defaultState(), id?: string): Project {
+  return {
+    id: id ?? `project-${uid()}`,
+    name,
+    board: sanitizeBoardState(board),
+  };
+}
+
 export default function Board() {
-  const [state, setState] = useLocalStorage<BoardState>("kanban-state", defaultState());
+  const [storedState, setStoredState] = useLocalStorage<AppState | BoardState>(
+    "kanban-state",
+    defaultAppState(),
+  );
   const [showColumns, setShowColumns] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [editingCard, setEditingCard] = useState<null | { id?: string; columnId?: string }>(null);
@@ -37,8 +114,54 @@ export default function Board() {
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
 
-  const columnIds = useMemo(() => state.columns.map((c) => c.id), [state.columns]);
-  const categoryMap = useMemo(() => new Map(state.categories.map((c) => [c.id, c])), [state.categories]);
+  useEffect(() => {
+    setStoredState((prev) => {
+      if (isAppState(prev)) {
+        if (prev.projects.length > 0) return prev;
+        const fallbackProject = createProject(DEFAULT_PROJECT_NAME);
+        return {
+          ...prev,
+          activeProjectId: fallbackProject.id,
+          projects: [fallbackProject],
+        };
+      }
+      const migratedProject = createProject(
+        DEFAULT_PROJECT_NAME,
+        sanitizeBoardState(prev),
+        DEFAULT_MIGRATED_PROJECT_ID,
+      );
+      return {
+        activeProjectId: migratedProject.id,
+        projects: [migratedProject],
+      };
+    });
+  }, [storedState, setStoredState]);
+
+  const ready = isAppState(storedState) && storedState.projects.length > 0;
+  const appState: AppState = ready ? (storedState as AppState) : defaultAppState();
+  const activeProject =
+    appState.projects.find((project) => project.id === appState.activeProjectId) ?? appState.projects[0];
+  const board = activeProject.board;
+
+  useEffect(() => {
+    if (!isAppState(storedState) || storedState.projects.length === 0) return;
+    if (storedState.projects.some((project) => project.id === storedState.activeProjectId)) return;
+    setStoredState((prev) => {
+      if (!isAppState(prev) || prev.projects.length === 0) return prev;
+      if (prev.projects.some((project) => project.id === prev.activeProjectId)) return prev;
+      return { ...prev, activeProjectId: prev.projects[0].id };
+    });
+  }, [storedState, setStoredState]);
+
+  const columnIds = useMemo(() => board.columns.map((column) => column.id), [board.columns]);
+  const categoryMap = useMemo(
+    () => new Map(board.categories.map((category) => [category.id, category])),
+    [board.categories],
+  );
+  const activeFiltersSafe = useMemo(
+    () => activeFilters.filter((id) => categoryMap.has(id)),
+    [activeFilters, categoryMap],
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -49,37 +172,88 @@ export default function Board() {
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   };
 
-  useEffect(() => {
-    setActiveFilters((prev) => prev.filter((id) => categoryMap.has(id)));
-  }, [categoryMap]);
+  const updateActiveBoard = (updater: (current: BoardState) => BoardState) => {
+    setStoredState((prev) => {
+      if (!isAppState(prev)) return prev;
+      const projectIndex = prev.projects.findIndex((project) => project.id === prev.activeProjectId);
+      if (projectIndex === -1) return prev;
+
+      const project = prev.projects[projectIndex];
+      const updatedBoard = updater(project.board);
+      if (updatedBoard === project.board) return prev;
+
+      const projects = [...prev.projects];
+      projects[projectIndex] = { ...project, board: updatedBoard };
+
+      return { ...prev, projects };
+    });
+  };
+
+  const handleSelectProject = (projectId: string) => {
+    const willChange = ready && appState.activeProjectId !== projectId;
+    setStoredState((prev) => {
+      if (!isAppState(prev)) return prev;
+      if (prev.activeProjectId === projectId) return prev;
+      if (!prev.projects.some((project) => project.id === projectId)) return prev;
+      return { ...prev, activeProjectId: projectId };
+    });
+    if (willChange) {
+      setEditingCard(null);
+      setActiveDragCard(null);
+      setActiveFilters([]);
+    }
+  };
+
+  const handleAddProject = () => {
+    const name = typeof window !== "undefined" ? window.prompt("Project name", "New project") : null;
+    const trimmed = name?.trim();
+    if (!trimmed) return;
+
+    const newProject = createProject(trimmed);
+    setStoredState((prev) => {
+      if (!isAppState(prev)) return prev;
+      return {
+        ...prev,
+        activeProjectId: newProject.id,
+        projects: [...prev.projects, newProject],
+      };
+    });
+    setEditingCard(null);
+    setActiveDragCard(null);
+    setActiveFilters([]);
+  };
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over) {
+      setActiveDragCard(null);
+      return;
+    }
     const [type, fromColumnId, cardId] = String(active.id).split(":");
     const [overType, toColumnId, overCardId] = String(over.id).split(":");
-    if (type !== "card" || (overType !== "card" && overType !== "column")) return;
+    if (type !== "card" || (overType !== "card" && overType !== "column")) {
+      setActiveDragCard(null);
+      return;
+    }
 
-    setState((prev) => {
-      const fromIdx = prev.columns.findIndex((c) => c.id === fromColumnId);
-      const toIdx = prev.columns.findIndex((c) => c.id === toColumnId);
+    updateActiveBoard((prev) => {
+      const fromIdx = prev.columns.findIndex((column) => column.id === fromColumnId);
+      const toIdx = prev.columns.findIndex((column) => column.id === toColumnId);
       if (fromIdx < 0 || toIdx < 0) return prev;
 
       const from = { ...prev.columns[fromIdx] };
       const to = fromIdx === toIdx ? from : { ...prev.columns[toIdx] };
 
-      // remove from source
       const currentIndex = from.cardIds.indexOf(cardId);
       if (currentIndex === -1) return prev;
       from.cardIds.splice(currentIndex, 1);
 
-      // insert into target
       if (overType === "column") {
         to.cardIds.push(cardId);
       } else {
         const overIndex = to.cardIds.indexOf(overCardId);
-        const at = overIndex === -1 ? to.cardIds.length : overIndex;
-        to.cardIds.splice(at, 0, cardId);
+        const insertAt = overIndex === -1 ? to.cardIds.length : overIndex;
+        to.cardIds.splice(insertAt, 0, cardId);
       }
 
       const columns = [...prev.columns];
@@ -93,22 +267,25 @@ export default function Board() {
   const onDragStart = (event: DragStartEvent) => {
     const [type, , cardId] = String(event.active.id).split(":");
     if (type !== "card") return;
-    const card = state.cards[cardId];
+    const card = board.cards[cardId];
     if (card) setActiveDragCard(card);
   };
 
-  const onDragCancel = (_event: DragCancelEvent) => {
+  const onDragCancel = () => {
     setActiveDragCard(null);
   };
 
   const handleCreate = (columnId: string) => setEditingCard({ columnId });
 
   const upsertCard = (columnId: string, card: Partial<Card> & { id?: string; title: string }) => {
-    setState((prev) => {
+    updateActiveBoard((prev) => {
       const id = card.id ?? uid();
       const existing = prev.cards[id];
       const createdAt = existing?.createdAt ?? new Date().toISOString();
-      const fallbackCategory = existing && (existing as any).categoryId ? [(existing as any).categoryId as string] : [];
+      const fallbackCategory =
+        existing && (existing as { categoryId?: string }).categoryId
+          ? [((existing as { categoryId?: string }).categoryId as string)]
+          : [];
       const full: Card = {
         id,
         title: card.title,
@@ -120,65 +297,118 @@ export default function Board() {
         links: card.links ?? existing?.links ?? [],
       };
       const cards = { ...prev.cards, [id]: full };
-      let columns = prev.columns.map((c) => ({ ...c }));
-      // ensure presence in target column
-      const fromIdx = columns.findIndex((c) => c.cardIds.includes(id));
-      if (fromIdx >= 0) columns[fromIdx].cardIds = columns[fromIdx].cardIds.filter((x) => x !== id);
-      const toIdx = columns.findIndex((c) => c.id === columnId);
-      if (toIdx >= 0 && !columns[toIdx].cardIds.includes(id)) columns[toIdx].cardIds.unshift(id);
+      const columns = prev.columns.map((column) => ({ ...column }));
+      const fromIdx = columns.findIndex((column) => column.cardIds.includes(id));
+      if (fromIdx >= 0) {
+        columns[fromIdx].cardIds = columns[fromIdx].cardIds.filter((cardId) => cardId !== id);
+      }
+      const toIdx = columns.findIndex((column) => column.id === columnId);
+      if (toIdx >= 0 && !columns[toIdx].cardIds.includes(id)) {
+        columns[toIdx].cardIds.unshift(id);
+      }
       return { ...prev, cards, columns };
     });
     setEditingCard(null);
   };
 
   const deleteCard = (id: string) => {
-    setState((prev) => {
+    updateActiveBoard((prev) => {
       const cards = { ...prev.cards };
       delete cards[id];
-      const columns = prev.columns.map((c) => ({ ...c, cardIds: c.cardIds.filter((x) => x !== id) }));
+      const columns = prev.columns.map((column) => ({
+        ...column,
+        cardIds: column.cardIds.filter((cardId) => cardId !== id),
+      }));
       return { ...prev, cards, columns };
     });
   };
 
-  const saveColumns = (columns: Column[]) => setState((p) => ({ ...p, columns }));
-  const saveCategories = (categories: Category[]) => setState((p) => ({ ...p, categories }));
+  const saveColumns = (columns: Column[]) => {
+    updateActiveBoard((prev) => ({ ...prev, columns }));
+  };
+
+  const saveCategories = (categories: Category[]) => {
+    updateActiveBoard((prev) => ({ ...prev, categories }));
+  };
+
+  if (!ready) {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-20">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Kanban</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Personal board with drag & drop</p>
+      <header className="mb-6 flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <label
+            htmlFor="project-select"
+            className="text-sm font-medium text-zinc-600 dark:text-zinc-300"
+          >
+            Projects
+          </label>
+          <select
+            id="project-select"
+            value={appState.activeProjectId}
+            onChange={(event) => handleSelectProject(event.target.value)}
+            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40"
+          >
+            {appState.projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleAddProject}
+            className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+          >
+            <Plus size={16} /> New Project
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowCategories(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:bg-zinc-900 dark:border-white/10 dark:text-zinc-200 dark:hover:text-white">
-            <Tags size={16} /> Manage Categories
-          </button>
-          <button onClick={() => setShowColumns(true)} className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:bg-zinc-900 dark:border-white/10 dark:text-zinc-200 dark:hover:text-white">
-            <SlidersHorizontal size={16} /> Manage Columns
-          </button>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{activeProject.name}</h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Each project keeps its own kanban board.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowCategories(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            >
+              <Tags size={16} /> Manage Categories
+            </button>
+            <button
+              onClick={() => setShowColumns(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            >
+              <SlidersHorizontal size={16} /> Manage Columns
+            </button>
+          </div>
         </div>
       </header>
 
       <section className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <FilterChip
-            selected={activeFilters.length === 0}
+            selected={activeFiltersSafe.length === 0}
             label="All"
             onClick={() => setActiveFilters([])}
           />
-          {state.categories.map((category) => (
+          {board.categories.map((category) => (
             <FilterChip
               key={category.id}
               label={category.name}
               color={category.color}
-              selected={activeFilters.includes(category.id)}
+              selected={activeFiltersSafe.includes(category.id)}
               onClick={() =>
-                setActiveFilters((prev) =>
-                  prev.includes(category.id)
-                    ? prev.filter((id) => id !== category.id)
-                    : [...prev, category.id],
-                )
+                setActiveFilters((prev) => {
+                  const sanitized = prev.filter((id) => categoryMap.has(id));
+                  return sanitized.includes(category.id)
+                    ? sanitized.filter((id) => id !== category.id)
+                    : [...sanitized, category.id];
+                })
               }
             />
           ))}
@@ -194,36 +424,33 @@ export default function Board() {
         </label>
       </section>
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragCancel={onDragCancel}
-      >
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
         <div className="flex gap-4 overflow-x-auto pb-2">
           <SortableContext items={columnIds}>
-            {state.columns.map((col) => (
-              <div key={col.id} className="min-w-[320px] max-w-[360px] flex-1">
+            {board.columns.map((column) => (
+              <div key={column.id} className="min-w-[320px] max-w-[360px] flex-1">
                 <ColumnView
-                  key={col.id}
-                  column={col}
-                  cards={col.cardIds
-                    .map((id) => state.cards[id])
+                  key={column.id}
+                  column={column}
+                  cards={column.cardIds
+                    .map((cardId) => board.cards[cardId])
                     .filter(Boolean)
                     .filter((card) => {
                       if (!card) return false;
                       if (showHighPriorityOnly && !(card.priority === "high" || card.priority === "critical")) {
                         return false;
                       }
-                      if (activeFilters.length === 0) return true;
+                      if (activeFiltersSafe.length === 0) return true;
                       const categoriesForCard =
-                        card?.categoryIds ??
-                        ((card as any)?.categoryId ? [(card as any).categoryId as string] : []);
+                        card.categoryIds ??
+                        ((card as unknown as { categoryId?: string }).categoryId
+                          ? [((card as unknown as { categoryId?: string }).categoryId as string)]
+                          : []);
                       if (!categoriesForCard || categoriesForCard.length === 0) return false;
-                      return categoriesForCard.some((categoryId) => activeFilters.includes(categoryId));
+                      return categoriesForCard.some((categoryId) => activeFiltersSafe.includes(categoryId));
                     })}
-                  categories={state.categories}
-                  onAdd={() => handleCreate(col.id)}
+                  categories={board.categories}
+                  onAdd={() => handleCreate(column.id)}
                   onEdit={(id) => setEditingCard({ id })}
                   onDelete={deleteCard}
                 />
@@ -232,34 +459,39 @@ export default function Board() {
           </SortableContext>
         </div>
         <DragOverlay dropAnimation={dropAnimation}>
-          {activeDragCard ? <CardPreview card={activeDragCard} categories={state.categories} /> : null}
+          {activeDragCard ? <CardPreview card={activeDragCard} categories={board.categories} /> : null}
         </DragOverlay>
       </DndContext>
 
       <UpsertCardModal
         open={!!editingCard}
         onClose={() => setEditingCard(null)}
-        card={editingCard?.id ? state.cards[editingCard.id] : undefined}
-        categories={state.categories}
-        onSave={(data) =>
-          upsertCard(
-            editingCard?.columnId ?? findColumnContaining(state, editingCard?.id) ?? state.columns[0]?.id,
-            data,
-          )
-        }
+        card={editingCard?.id ? board.cards[editingCard.id] : undefined}
+        categories={board.categories}
+        onSave={(data) => {
+          const targetColumnId =
+            editingCard?.columnId ??
+            findColumnContaining(board, editingCard?.id) ??
+            board.columns[0]?.id;
+          if (!targetColumnId) {
+            setEditingCard(null);
+            return;
+          }
+          upsertCard(targetColumnId, data);
+        }}
       />
 
       <ManageColumnsModal
         open={showColumns}
         onClose={() => setShowColumns(false)}
-        columns={state.columns}
+        columns={board.columns}
         onSave={saveColumns}
       />
 
       <ManageCategoriesModal
         open={showCategories}
         onClose={() => setShowCategories(false)}
-        categories={state.categories}
+        categories={board.categories}
         onSave={saveCategories}
       />
     </div>
@@ -268,7 +500,7 @@ export default function Board() {
 
 function findColumnContaining(state: BoardState, cardId?: string) {
   if (!cardId) return undefined;
-  return state.columns.find((c) => c.cardIds.includes(cardId))?.id;
+  return state.columns.find((column) => column.cardIds.includes(cardId))?.id;
 }
 
 type FilterChipProps = {

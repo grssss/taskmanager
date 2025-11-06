@@ -34,6 +34,17 @@ export interface BoardState {
   categories: Category[];
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  board: BoardState;
+}
+
+export interface AppState {
+  activeProjectId: string;
+  projects: Project[];
+}
+
 export const defaultColumns: Column[] = [
   { id: "todo", name: "To Do", cardIds: [] },
   { id: "in-progress", name: "In Progress", cardIds: [] },
@@ -41,9 +52,26 @@ export const defaultColumns: Column[] = [
 ];
 
 export const defaultState = (): BoardState => ({
-  columns: defaultColumns,
+  columns: defaultColumns.map((column) => ({
+    ...column,
+    cardIds: [...column.cardIds],
+  })),
   cards: {},
   categories: [
     { id: "general", name: "General", color: "#64748b" },
   ],
 });
+
+export const defaultAppState = (): AppState => {
+  const defaultProjectId = "project-default";
+  return {
+    activeProjectId: defaultProjectId,
+    projects: [
+      {
+        id: defaultProjectId,
+        name: "Personal",
+        board: defaultState(),
+      },
+    ],
+  };
+};

@@ -15,7 +15,11 @@ type Props = {
 export default function ManageCategoriesModal({ open, categories, onSave, onClose }: Props) {
   const [local, setLocal] = useState<Category[]>(categories);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
-  useEffect(() => { setLocal(categories); setPickerFor(null); }, [categories, open]);
+  useEffect(() => {
+    if (!open) return;
+    setLocal(categories);
+    setPickerFor(null);
+  }, [categories, open]);
 
   const add = () =>
     setLocal((existing) => {

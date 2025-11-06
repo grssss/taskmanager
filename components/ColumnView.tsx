@@ -28,7 +28,7 @@ export default function ColumnView({ column, cards, categories, onAdd, onEdit, o
           <Plus size={14} /> Add
         </button>
       </header>
-      <div ref={setNodeRef} className="min-h-10 space-y-2">
+      <div ref={setNodeRef} className="min-h-32 space-y-2 rounded-xl px-1 pb-6 pt-2">
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <CardItem key={card.id} columnId={column.id} card={card} categories={categories} onEdit={() => onEdit(card.id)} onDelete={() => onDelete(card.id)} />
