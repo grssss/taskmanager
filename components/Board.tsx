@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Plus, SlidersHorizontal, Tags } from "lucide-react";
-import { useLocalStorage } from "@/lib/useLocalStorage";
+import { useSupabaseStorage } from "@/lib/useSupabaseStorage";
 import {
   AppState,
   BoardState,
@@ -106,7 +106,7 @@ function createProject(name: string, board: BoardState = defaultState(), id?: st
 }
 
 export default function Board() {
-  const [storedState, setStoredState] = useLocalStorage<AppState | BoardState>(
+  const [storedState, setStoredState, loadingStorage] = useSupabaseStorage<AppState>(
     "kanban-state",
     defaultAppState(),
   );
@@ -417,8 +417,15 @@ export default function Board() {
     }
   };
 
-  if (!ready) {
-    return null;
+  if (!ready || loadingStorage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading your data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
