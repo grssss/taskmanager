@@ -29,6 +29,7 @@ import {
 import ColumnView from "@/components/ColumnView";
 import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
+import ManageProjectsModal from "@/components/ManageProjectsModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
 import { CardPreview } from "@/components/CardItem";
 
@@ -110,6 +111,7 @@ export default function Board() {
   );
   const [showColumns, setShowColumns] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [showProjects, setShowProjects] = useState(false);
   const [editingCard, setEditingCard] = useState<null | { id?: string; columnId?: string }>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
@@ -343,6 +345,17 @@ export default function Board() {
     updateActiveBoard((prev) => ({ ...prev, categories }));
   };
 
+  const saveProjects = (projects: Project[], newActiveProjectId?: string) => {
+    setStoredState((prev) => {
+      if (!isAppState(prev)) return prev;
+      const updatedState = { ...prev, projects };
+      if (newActiveProjectId && newActiveProjectId !== prev.activeProjectId) {
+        updatedState.activeProjectId = newActiveProjectId;
+      }
+      return updatedState;
+    });
+  };
+
 
   if (!ready || loadingStorage) {
     return (
@@ -379,7 +392,7 @@ export default function Board() {
           </select>
           <button
             type="button"
-            onClick={() => {/* TODO: Implement manage projects modal */}}
+            onClick={() => setShowProjects(true)}
             className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
           >
             <FolderCog size={16} /> Manage Projects
@@ -554,6 +567,14 @@ export default function Board() {
         onClose={() => setShowCategories(false)}
         categories={board.categories}
         onSave={saveCategories}
+      />
+
+      <ManageProjectsModal
+        open={showProjects}
+        onClose={() => setShowProjects(false)}
+        projects={appState.projects}
+        activeProjectId={appState.activeProjectId}
+        onSave={saveProjects}
       />
     </div>
   );
