@@ -14,7 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Tags } from "lucide-react";
+import { Plus, SlidersHorizontal, Tags, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useSupabaseStorage } from "@/lib/useSupabaseStorage";
 import {
   AppState,
@@ -31,9 +31,6 @@ import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
 import { CardPreview } from "@/components/CardItem";
-import { NaturalLanguageInput } from "@/components/NaturalLanguageInput";
-import { ProcessedQuery } from "@/lib/nlp";
-import { useQueryHistory } from "@/lib/useQueryHistory";
 
 const DEFAULT_PROJECT_NAME = "Personal";
 const DEFAULT_MIGRATED_PROJECT_ID = "project-default";
@@ -106,7 +103,7 @@ function createProject(name: string, board: BoardState = defaultState(), id?: st
 }
 
 export default function Board() {
-  const [storedState, setStoredState, loadingStorage] = useSupabaseStorage<AppState>(
+  const [storedState, setStoredState, loadingStorage, syncStatus] = useSupabaseStorage<AppState>(
     "kanban-state",
     defaultAppState(),
   );
@@ -116,9 +113,6 @@ export default function Board() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
-  const [searchKeywords, setSearchKeywords] = useState<string[]>([]);
-  const [dateRangeFilter, setDateRangeFilter] = useState<{ start?: Date; end?: Date } | null>(null);
-  const { addQuery } = useQueryHistory();
 
   useEffect(() => {
     setStoredState((prev) => {
@@ -337,85 +331,6 @@ export default function Board() {
     updateActiveBoard((prev) => ({ ...prev, categories }));
   };
 
-  const handleNaturalLanguageQuery = (result: ProcessedQuery) => {
-    // Track query in history
-    let wasSuccessful = true;
-
-    try {
-      // Process each action from the NLP result
-      for (const action of result.actions) {
-        switch (action.type) {
-        case 'search':
-          // Set search keywords for filtering
-          if (action.payload.keywords) {
-            setSearchKeywords(action.payload.keywords);
-          }
-          break;
-
-        case 'filter':
-          // Apply filters
-          if (action.payload.categories) {
-            setActiveFilters(action.payload.categories);
-          }
-          if (action.payload.priority) {
-            // Set high priority filter if priority is high or critical
-            setShowHighPriorityOnly(
-              action.payload.priority === 'high' || action.payload.priority === 'critical'
-            );
-          }
-          if (action.payload.dateRange) {
-            setDateRangeFilter(action.payload.dateRange);
-          }
-          break;
-
-        case 'clear_filters':
-          // Clear all filters
-          setActiveFilters([]);
-          setShowHighPriorityOnly(false);
-          setSearchKeywords([]);
-          setDateRangeFilter(null);
-          break;
-
-        case 'create_task':
-          // Create a new task with the extracted data
-          const columnId = action.payload.columnId || board.columns[0]?.id;
-          if (columnId) {
-            const newCard: Card = {
-              id: uid(),
-              title: action.payload.title,
-              description: action.payload.description,
-              categoryIds: action.payload.categoryIds || [],
-              priority: action.payload.priority || 'medium',
-              createdAt: new Date().toISOString(),
-              dueDate: action.payload.dueDate,
-              links: action.payload.links || [],
-            };
-
-            updateActiveBoard((prev) => {
-              const cards = { ...prev.cards, [newCard.id]: newCard };
-              const columns = prev.columns.map((column) => {
-                if (column.id === columnId) {
-                  return { ...column, cardIds: [newCard.id, ...column.cardIds] };
-                }
-                return column;
-              });
-              return { ...prev, cards, columns };
-            });
-          }
-          break;
-
-        default:
-          break;
-        }
-      }
-    } catch (error) {
-      console.error('Error processing natural language query:', error);
-      wasSuccessful = false;
-    } finally {
-      // Add query to history for analytics
-      addQuery(result.rawQuery, result, wasSuccessful);
-    }
-  };
 
   if (!ready || loadingStorage) {
     return (
@@ -457,6 +372,28 @@ export default function Board() {
           >
             <Plus size={16} /> New Project
           </button>
+
+          {/* Sync Status Indicator */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200">
+            {syncStatus.syncing ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-blue-500" />
+                <span>Syncing...</span>
+              </>
+            ) : syncStatus.error ? (
+              <>
+                <CloudOff size={16} className="text-red-500" />
+                <span className="text-red-600 dark:text-red-400" title={syncStatus.error}>
+                  Sync failed
+                </span>
+              </>
+            ) : syncStatus.lastSynced ? (
+              <>
+                <Cloud size={16} className="text-green-500" />
+                <span className="text-green-600 dark:text-green-400">Synced</span>
+              </>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -482,16 +419,6 @@ export default function Board() {
         </div>
       </header>
 
-      {/* Natural Language Input */}
-      <section className="mb-6">
-        <NaturalLanguageInput
-          categories={board.categories}
-          columns={board.columns}
-          cards={board.cards}
-          onQueryProcessed={handleNaturalLanguageQuery}
-          className="max-w-3xl"
-        />
-      </section>
 
       <section className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -560,30 +487,6 @@ export default function Board() {
                         }
                       }
 
-                      // Search keywords filter
-                      if (searchKeywords.length > 0) {
-                        const searchText = `${card.title} ${card.description || ''}`.toLowerCase();
-                        const hasMatch = searchKeywords.some((keyword) =>
-                          searchText.includes(keyword.toLowerCase())
-                        );
-                        if (!hasMatch) return false;
-                      }
-
-                      // Date range filter
-                      if (dateRangeFilter) {
-                        if (card.dueDate) {
-                          const dueDate = new Date(card.dueDate);
-                          if (dateRangeFilter.start && dueDate < dateRangeFilter.start) {
-                            return false;
-                          }
-                          if (dateRangeFilter.end && dueDate > dateRangeFilter.end) {
-                            return false;
-                          }
-                        } else if (dateRangeFilter.start || dateRangeFilter.end) {
-                          // If card has no due date but date filter is active, exclude it
-                          return false;
-                        }
-                      }
 
                       return true;
                     })}
