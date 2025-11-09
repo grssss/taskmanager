@@ -171,7 +171,7 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
         event.stopPropagation();
         onEdit();
       }}
-      className={`group rounded-xl border border-white/10 bg-zinc-950 p-3 shadow-sm transition-all hover:bg-zinc-900 ${
+      className={`group rounded-xl border border-white/10 bg-zinc-950 p-3 shadow-sm transition-all hover:bg-zinc-800/60 ${
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
