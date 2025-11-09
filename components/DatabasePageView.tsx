@@ -226,13 +226,13 @@ export default function DatabasePageView({
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-0.5 rounded-full border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900 p-1">
+          <div className="inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-zinc-900 shadow-sm p-1">
             <button
               onClick={() => setViewMode("kanban")}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
                 viewMode === "kanban"
-                  ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
-                  : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+                  ? "bg-zinc-700 text-zinc-200"
+                  : "text-zinc-200 hover:text-zinc-100"
               }`}
             >
               <LayoutGrid size={16} /> Kanban
@@ -241,8 +241,8 @@ export default function DatabasePageView({
               onClick={() => setViewMode("table")}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
                 viewMode === "table"
-                  ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
-                  : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+                  ? "bg-zinc-700 text-zinc-200"
+                  : "text-zinc-200 hover:text-zinc-100"
               }`}
             >
               <Table2 size={16} /> Table
@@ -250,13 +250,13 @@ export default function DatabasePageView({
           </div>
           <button
             onClick={() => setShowCategories(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 shadow-sm transition-colors hover:text-zinc-100 hover:shadow"
           >
             <Tags size={16} /> Manage Categories
           </button>
           <button
             onClick={() => setShowColumns(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 shadow-sm transition-colors hover:text-zinc-100 hover:shadow"
           >
             <SlidersHorizontal size={16} /> Manage Columns
           </button>
@@ -288,12 +288,12 @@ export default function DatabasePageView({
             />
           ))}
         </div>
-        <label className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm text-zinc-600 shadow-sm transition hover:border-black/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-white/20">
+        <label className="flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-200 shadow-sm transition hover:border-white/20">
           <input
             type="checkbox"
             checked={showHighPriorityOnly}
             onChange={(e) => setShowHighPriorityOnly(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-black focus:ring-black dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:focus:ring-white"
+            className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-white focus:ring-white"
           />
           High priority only
         </label>
@@ -420,8 +420,8 @@ function FilterChip({ label, selected, onClick, color }: FilterChipProps) {
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-all ${
         selected
-          ? "bg-black text-white shadow dark:bg-zinc-700 dark:text-zinc-200"
-          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          ? "bg-zinc-700 text-zinc-200 shadow"
+          : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
       }`}
       style={
         selected && color ? { backgroundColor: baseColor, color: "#fff" } : undefined

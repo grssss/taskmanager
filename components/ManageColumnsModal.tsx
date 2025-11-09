@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Column } from "@/lib/types";
 import { ArrowDownAZ, ArrowUpZA, Plus, X } from "lucide-react";
+import Dialog from "./Dialog";
 
 type Props = {
   open: boolean;
@@ -31,21 +32,21 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
   });
 
   return (
-    <Dialog open={open} onClose={onClose} title="Manage Columns">
+    <Dialog open={open} onClose={onClose} title="Manage Columns" maxWidth="lg">
       <div className="space-y-2">
         {local.map((c, i) => (
-          <div key={c.id} className="flex items-center gap-2 rounded-lg border border-black/10 bg-white p-2 dark:bg-zinc-900 dark:border-white/10">
-            <input value={c.name} onChange={(e) => rename(c.id, e.target.value)} className="flex-1 rounded-md bg-zinc-100 px-2 py-1 text-sm outline-none dark:bg-zinc-800" />
-            <button onClick={() => move(i, -1)} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Up"><ArrowUpZA size={16} /></button>
-            <button onClick={() => move(i, 1)} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Down"><ArrowDownAZ size={16} /></button>
-            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
+          <div key={c.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 p-2">
+            <input value={c.name} onChange={(e) => rename(c.id, e.target.value)} className="flex-1 rounded-md bg-zinc-800 px-2 py-1 text-sm outline-none" />
+            <button onClick={() => move(i, -1)} className="rounded-md p-1 hover:bg-zinc-800" aria-label="Up"><ArrowUpZA size={16} /></button>
+            <button onClick={() => move(i, 1)} className="rounded-md p-1 hover:bg-zinc-800" aria-label="Down"><ArrowDownAZ size={16} /></button>
+            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
           </div>
         ))}
         <div className="flex justify-between pt-2">
-          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"><Plus size={16} /> Add Column</button>
+          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100"><Plus size={16} /> Add Column</button>
           <div className="space-x-2">
-            <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
-            <button onClick={() => { onSave(local.map((c) => ({ ...c, id: slug(c.name) }))); onClose(); }} className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black">Save</button>
+            <button onClick={onClose} className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm">Cancel</button>
+            <button onClick={() => { onSave(local.map((c) => ({ ...c, id: slug(c.name) }))); onClose(); }} className="rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100">Save</button>
           </div>
         </div>
       </div>
@@ -55,20 +56,5 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
 
 function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Close"><X size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
 }
 

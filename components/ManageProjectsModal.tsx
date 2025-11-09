@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Project } from "@/lib/types";
 import { GripVertical, X } from "lucide-react";
+import Dialog from "./Dialog";
 
 type Props = {
   open: boolean;
@@ -55,7 +56,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
       className={`flex items-center gap-2 rounded-lg border p-2 ${
         isActive
           ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-          : "border-black/10 bg-white dark:bg-zinc-900 dark:border-white/10"
+          : "border-white/10 bg-zinc-900"
       }`}
     >
       <button
@@ -68,7 +69,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
       <input
         value={project.name}
         onChange={(e) => onRename(project.id, e.target.value)}
-        className="flex-1 rounded-md bg-zinc-100 px-2 py-1 text-sm outline-none dark:bg-zinc-800"
+        className="flex-1 rounded-md bg-zinc-800 px-2 py-1 text-sm outline-none"
       />
       {isActive && (
         <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Active</span>
@@ -79,7 +80,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
         className={`rounded-md p-1 ${
           !canDelete
             ? "cursor-not-allowed text-zinc-300 dark:text-zinc-700"
-            : "text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            : "text-red-600 hover:bg-zinc-800"
         }`}
         aria-label="Delete"
         title={!canDelete ? "Cannot delete the last project" : "Delete project"}
@@ -153,7 +154,7 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Manage Projects">
+    <Dialog open={open} onClose={onClose} title="Manage Projects" maxWidth="lg">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={local.map((p) => p.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
@@ -174,49 +175,18 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
         <div className="space-x-2">
           <button
             onClick={onClose}
-            className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10"
+            className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"
+            className="rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100"
           >
             Save
           </button>
         </div>
       </div>
     </Dialog>
-  );
-}
-
-function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }

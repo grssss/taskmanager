@@ -56,6 +56,7 @@ export default function Sidebar({
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<"before" | "after" | null>(null);
+  const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
@@ -73,10 +74,10 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <div className="hidden md:flex w-12 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex-col items-center py-4">
+      <div className="hidden md:flex w-12 bg-zinc-900 border-r border-white/10 flex-col items-center py-4">
         <button
           onClick={onToggleCollapse}
-          className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+          className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
           title="Expand sidebar"
         >
           <ChevronRight size={20} />
@@ -116,13 +117,15 @@ export default function Sidebar({
     }
   };
 
-  const handleRenamePage = (pageId: string) => {
+  const handleRenamePage = (pageId: string, newTitle?: string) => {
     const page = workspaceState.pages[pageId];
-    const newTitle = prompt("New title:", page?.title || "");
-    if (!newTitle || !page) return;
+
+    // If no new title provided, use prompt (for context menu)
+    const title = newTitle !== undefined ? newTitle : prompt("New title:", page?.title || "");
+    if (!title || !page) return;
 
     try {
-      const newState = updatePage(workspaceState, pageId, { title: newTitle });
+      const newState = updatePage(workspaceState, pageId, { title });
       onStateChange(newState);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to rename page");
@@ -257,17 +260,17 @@ export default function Sidebar({
       )}
 
       <div className={`
-        w-80 md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col h-screen
+        w-80 md:w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen
         fixed md:relative z-40 md:z-0
         transition-transform duration-300 ease-in-out
         ${collapsed ? "-translate-x-full md:translate-x-0" : "translate-x-0"}
       `}>
         {/* Header */}
-        <div className="p-4 border-b border-black/10 dark:border-white/10 relative">
+        <div className="p-4 border-b border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
+              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
             >
               <span className="truncate">
                 {activeWorkspace?.icon} {activeWorkspace?.name}
@@ -277,7 +280,7 @@ export default function Sidebar({
             {/* Close button for mobile */}
             <button
               onClick={onToggleCollapse}
-              className="md:hidden p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="md:hidden p-1 rounded hover:bg-zinc-800 transition-colors"
               title="Close sidebar"
             >
               <X size={20} />
@@ -285,7 +288,7 @@ export default function Sidebar({
             {/* Collapse button for desktop */}
             <button
               onClick={onToggleCollapse}
-              className="hidden md:block p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="hidden md:block p-1 rounded hover:bg-zinc-800 transition-colors"
               title="Collapse sidebar"
             >
               <ChevronDown size={16} className="rotate-[-90deg]" />
@@ -294,15 +297,15 @@ export default function Sidebar({
 
           {/* Workspace selector dropdown */}
           {showWorkspaceMenu && (
-            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden">
+            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden">
               {workspaceState.workspaces.map((workspace) => (
                 <button
                   key={workspace.id}
                   onClick={() => handleSwitchWorkspace(workspace.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                     workspace.id === workspaceState.activeWorkspaceId
-                      ? "bg-zinc-100 dark:bg-zinc-700"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                      ? "bg-zinc-700"
+                      : "hover:bg-zinc-700/50"
                   }`}
                 >
                   <span>{workspace.icon}</span>
@@ -323,7 +326,7 @@ export default function Sidebar({
               placeholder="Search pages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/10 bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-white"
             />
           </div>
         </div>
@@ -331,12 +334,12 @@ export default function Sidebar({
         {/* Pages list */}
         <div className="flex-1 overflow-y-auto p-2">
           <div className="flex items-center justify-between mb-2 px-2 relative">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-medium">
+            <span className="text-xs text-zinc-400 uppercase font-medium">
               Pages
             </span>
             <button
               onClick={() => setShowNewPageMenu(!showNewPageMenu)}
-              className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1 rounded hover:bg-zinc-800 transition-colors"
               title="New page"
             >
               <Plus size={14} />
@@ -344,17 +347,17 @@ export default function Sidebar({
 
             {/* New page menu */}
             {showNewPageMenu && (
-              <div className="absolute top-full right-2 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
+              <div className="absolute top-full right-2 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
                 <button
                   onClick={() => handleCreatePage("document")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
                 >
                   <FileText size={14} />
                   <span>Document Page</span>
                 </button>
                 <button
                   onClick={() => handleCreatePage("database")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
                 >
                   <Table2 size={14} />
                   <span>Database Page</span>
@@ -381,6 +384,9 @@ export default function Sidebar({
                 draggedPageId={draggedPageId}
                 dropTargetPageId={dropTargetPageId}
                 dropPosition={dropPosition}
+                renamingPageId={renamingPageId}
+                onStartRename={setRenamingPageId}
+                onRename={handleRenamePage}
                 level={0}
               />
             ))}
@@ -396,7 +402,7 @@ export default function Sidebar({
             onClick={() => setContextMenu(null)}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-md shadow-lg py-1 min-w-[160px]"
+            className="fixed z-50 bg-zinc-800 border border-white/10 rounded-md shadow-lg py-1 min-w-[160px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
@@ -404,7 +410,7 @@ export default function Sidebar({
                 handleRenamePage(contextMenu.pageId);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Edit2 size={14} />
               Rename
@@ -413,13 +419,13 @@ export default function Sidebar({
               onClick={() => {
                 setShowSubpageMenu(contextMenu.pageId);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Plus size={14} />
               Add subpage
               <ChevronRight size={14} className="ml-auto" />
             </button>
-            <div className="border-t border-black/10 dark:border-white/10 my-1" />
+            <div className="border-t border-white/10 my-1" />
             <button
               onClick={() => {
                 handleDeletePage(contextMenu.pageId);
@@ -445,7 +451,7 @@ export default function Sidebar({
             }}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
+            className="fixed z-50 bg-zinc-800 border border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
             style={{
               left: contextMenu ? contextMenu.x + 170 : 0,
               top: contextMenu ? contextMenu.y + 30 : 0
@@ -457,7 +463,7 @@ export default function Sidebar({
                 setShowSubpageMenu(null);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <FileText size={14} />
               Document Page
@@ -468,7 +474,7 @@ export default function Sidebar({
                 setShowSubpageMenu(null);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Table2 size={14} />
               Database Page
@@ -495,6 +501,9 @@ interface PageTreeItemProps {
   draggedPageId: string | null;
   dropTargetPageId: string | null;
   dropPosition: "before" | "after" | null;
+  renamingPageId: string | null;
+  onStartRename: (pageId: string | null) => void;
+  onRename: (pageId: string, newTitle: string) => void;
   level: number;
 }
 
@@ -513,18 +522,37 @@ function PageTreeItem({
   draggedPageId,
   dropTargetPageId,
   dropPosition,
+  renamingPageId,
+  onStartRename,
+  onRename,
   level,
 }: PageTreeItemProps) {
+  const [renameValue, setRenameValue] = useState(page.title);
   const children = getPageChildren(pages, page.id);
   const hasChildren = children.length > 0;
   const isActive = page.id === activePageId;
   const isDragging = draggedPageId === page.id;
   const isDropTarget = dropTargetPageId === page.id;
+  const isRenaming = renamingPageId === page.id;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onContextMenu(page.id, e.clientX, e.clientY);
+  };
+
+  const handleRenameSubmit = () => {
+    if (renameValue.trim() && renameValue !== page.title) {
+      onRename(page.id, renameValue.trim());
+    } else {
+      setRenameValue(page.title);
+    }
+    onStartRename(null);
+  };
+
+  const handleRenameCancel = () => {
+    setRenameValue(page.title);
+    onStartRename(null);
   };
 
   return (
@@ -558,8 +586,8 @@ function PageTreeItem({
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
-            ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
-            : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+            ? "bg-zinc-700 text-zinc-200"
+            : "hover:bg-zinc-800 text-zinc-200"
         } ${isDragging ? "opacity-50" : ""}`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
@@ -587,10 +615,38 @@ function PageTreeItem({
           )}
         </span>
 
-        <span className="truncate flex-1 text-left">
-          {page.icon && <span className="mr-1">{page.icon}</span>}
-          {page.title}
-        </span>
+        {isRenaming ? (
+          <input
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleRenameSubmit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                handleRenameCancel();
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+            className="flex-1 bg-zinc-800 border border-white/20 rounded px-1 py-0.5 text-sm outline-none focus:ring-1 focus:ring-white/40"
+          />
+        ) : (
+          <span
+            className="truncate flex-1 text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartRename(page.id);
+              setRenameValue(page.title);
+            }}
+          >
+            {page.icon && <span className="mr-1">{page.icon}</span>}
+            {page.title}
+          </span>
+        )}
 
         <span
           onClick={(e) => {
@@ -628,6 +684,9 @@ function PageTreeItem({
               draggedPageId={draggedPageId}
               dropTargetPageId={dropTargetPageId}
               dropPosition={dropPosition}
+              renamingPageId={renamingPageId}
+              onStartRename={onStartRename}
+              onRename={onRename}
               level={level + 1}
             />
           ))}

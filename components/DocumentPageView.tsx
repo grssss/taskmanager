@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkspaceState, Page, ContentBlock, ContentBlockType } from "@/lib/types";
 import { updatePage } from "@/lib/pageUtils";
 import { Plus } from "lucide-react";
@@ -20,6 +20,13 @@ export default function DocumentPageView({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(page.title);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+
+  // Sync title state when page changes
+  useEffect(() => {
+    setTitle(page.title);
+    // Auto-enable editing for new "Untitled" pages
+    setIsEditingTitle(page.title === "Untitled");
+  }, [page.id, page.title]);
 
   const handleTitleSave = () => {
     if (title.trim() && title !== page.title) {
@@ -100,6 +107,39 @@ export default function DocumentPageView({
 
       const newState = updatePage(workspaceState, page.id, { content: updatedContent });
       onStateChange(newState);
+
+      // Focus the previous block after merge
+      setTimeout(() => setFocusedBlockId(previousBlock.id), 10);
+    }
+  };
+
+  const handleBlockMergeWithNext = (blockId: string) => {
+    const currentContent = page.content || [];
+    const blockIndex = currentContent.findIndex((b) => b.id === blockId);
+
+    if (blockIndex < currentContent.length - 1) {
+      const currentBlock = currentContent[blockIndex];
+      const nextBlock = currentContent[blockIndex + 1];
+
+      // Merge next block's content into current block
+      const mergedContent =
+        (typeof currentBlock.content === "string" ? currentBlock.content : "") +
+        (typeof nextBlock.content === "string" ? nextBlock.content : "");
+
+      const updatedContent = currentContent
+        .map((block, index) => {
+          if (index === blockIndex) {
+            return { ...block, content: mergedContent, updatedAt: new Date().toISOString() };
+          }
+          return block;
+        })
+        .filter((_, index) => index !== blockIndex + 1);
+
+      const newState = updatePage(workspaceState, page.id, { content: updatedContent });
+      onStateChange(newState);
+
+      // Keep focus on current block after merge
+      setTimeout(() => setFocusedBlockId(currentBlock.id), 10);
     }
   };
 
@@ -143,14 +183,15 @@ export default function DocumentPageView({
                 setIsEditingTitle(false);
               }
             }}
+            onFocus={(e) => e.target.select()}
             autoFocus
-            className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
+            className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-100 placeholder-zinc-400"
             placeholder="Untitled"
           />
         ) : (
           <h1
             onClick={() => setIsEditingTitle(true)}
-            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded px-2 -mx-2 py-1 transition-colors text-zinc-900 dark:text-zinc-100"
+            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-800 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100"
           >
             {page.title}
           </h1>
@@ -168,8 +209,12 @@ export default function DocumentPageView({
               onDelete={handleBlockDelete}
               onCreate={handleBlockCreate}
               onMergeWithPrevious={handleBlockMerge}
+              onMergeWithNext={handleBlockMergeWithNext}
               onTypeChange={handleBlockTypeChange}
               onFocus={setFocusedBlockId}
+              shouldFocus={focusedBlockId === block.id}
+              previousBlockId={index > 0 ? page.content[index - 1].id : undefined}
+              nextBlockId={index < page.content.length - 1 ? page.content[index + 1].id : undefined}
               isFirst={index === 0}
               isLast={index === page.content.length - 1}
             />
@@ -177,7 +222,7 @@ export default function DocumentPageView({
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Plus size={48} className="text-zinc-300 dark:text-zinc-700 mb-4" />
-            <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-400 mb-4">
               This page is empty
             </p>
             <button

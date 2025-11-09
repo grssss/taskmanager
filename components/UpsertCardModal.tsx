@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, Category, Priority, ChecklistItem, FileAttachment } from "@/lib/types";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, Upload, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Upload, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { uploadFile, deleteFile } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
+import Dialog from "./Dialog";
 
 type Props = {
   open: boolean;
@@ -173,12 +174,12 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     <Dialog open={open} onClose={onClose} title={card ? "Edit Task" : "New Task"}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
+          <label className="mb-1 block text-xs text-zinc-400">Title</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md bg-zinc-800 px-3 py-2 text-sm outline-none" />
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Description</label>
+            <label className="block text-xs text-zinc-400">Description</label>
             {description && (
               <button
                 type="button"
@@ -190,18 +191,18 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
               </button>
             )}
           </div>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={descriptionExpanded ? 4 : 1} className="w-full resize-none rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={descriptionExpanded ? 4 : 1} className="w-full resize-none rounded-md bg-zinc-800 px-3 py-2 text-sm outline-none" />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Status:</label>
+          <label className="mb-1 block text-xs text-zinc-400">Status:</label>
           <div className="flex items-center gap-2">
             <input
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+              className="flex-1 rounded-md bg-zinc-800 px-3 py-2 text-sm outline-none"
             />
-            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add checklist item">
+            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-300" aria-label="Add checklist item">
               <Plus size={18} />
             </button>
           </div>
@@ -226,10 +227,10 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Categories</label>
-            <div className="space-y-1 rounded-md bg-zinc-100 px-2 py-1 dark:bg-zinc-800">
+            <label className="mb-1 block text-xs text-zinc-400">Categories</label>
+            <div className="space-y-1 rounded-md bg-zinc-800 px-2 py-1">
               {categories.length === 0 ? (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">No categories yet.</p>
+                <p className="text-xs text-zinc-400">No categories yet.</p>
               ) : (
                 categories.map((c) => {
                   const selected = categoryIds.includes(c.id);
@@ -237,7 +238,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                     <label key={c.id} className="flex items-center gap-2 text-xs font-medium">
                       <input
                         type="checkbox"
-                        className="h-3.5 w-3.5 rounded border border-black/20 dark:border-white/20"
+                        className="h-3.5 w-3.5 rounded border border-white/20"
                         checked={selected}
                         onChange={() =>
                           setCategoryIds((ids) =>
@@ -257,12 +258,12 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Due date</label>
-            <input type="date" value={dueDate ? dueDate.slice(0,10) : ""} onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : undefined)} className="w-full rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
+            <label className="mb-1 block text-xs text-zinc-400">Due date</label>
+            <input type="date" value={dueDate ? dueDate.slice(0,10) : ""} onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : undefined)} className="w-full rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800">
+            <label className="mb-1 block text-xs text-zinc-400">Priority</label>
+            <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -273,8 +274,8 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Links</label>
-            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add link">
+            <label className="block text-xs text-zinc-400">Links</label>
+            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="p-1 text-zinc-400 hover:text-zinc-300" aria-label="Add link">
               <Plus size={18} />
             </button>
           </div>
@@ -282,14 +283,14 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             {links.map((l, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="grid grid-cols-5 flex-1 gap-2">
-                  <input placeholder="Label" value={l.label} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="col-span-2 rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
-                  <input placeholder="https://" value={l.url} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} className="col-span-3 rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
+                  <input placeholder="Label" value={l.label} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="col-span-2 rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none" />
+                  <input placeholder="https://" value={l.url} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} className="col-span-3 rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none" />
                 </div>
                 {checklist.length > 0 && (
                   <select
                     value={l.checklistItemId ?? ""}
                     onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, checklistItemId: e.target.value || undefined } : x))}
-                    className="shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-xs outline-none cursor-pointer text-zinc-600 dark:text-zinc-400 dark:bg-zinc-800"
+                    className="shrink-0 rounded-md bg-zinc-800 px-2 py-0.5 text-xs outline-none cursor-pointer text-zinc-400"
                   >
                     <option value="">No status</option>
                     {checklist.map((item) => (
@@ -299,7 +300,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                     ))}
                   </select>
                 )}
-                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
+                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
@@ -307,10 +308,10 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">
+            <label className="block text-xs text-zinc-400">
               Files ({files.length}/{MAX_FILES})
             </label>
-            <label className="cursor-pointer p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+            <label className="cursor-pointer p-1 text-zinc-400 hover:text-zinc-300">
               <input
                 type="file"
                 multiple
@@ -323,19 +324,19 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             </label>
           </div>
           {uploadError && (
-            <div className="mb-2 rounded-md bg-red-100 px-3 py-2 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            <div className="mb-2 rounded-md bg-red-900/20 px-3 py-2 text-xs text-red-400">
               {uploadError}
             </div>
           )}
           {uploading && (
-            <div className="mb-2 rounded-md bg-blue-100 px-3 py-2 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+            <div className="mb-2 rounded-md bg-blue-900/20 px-3 py-2 text-xs text-blue-400">
               Uploading...
             </div>
           )}
           <div className="space-y-1.5">
             {files.map((file) => (
-              <div key={file.id} className="flex items-center gap-2 rounded-md bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
-                <div className="text-zinc-600 dark:text-zinc-400">
+              <div key={file.id} className="flex items-center gap-2 rounded-md bg-zinc-800 px-3 py-2">
+                <div className="text-zinc-400">
                   {getFileIcon(file.type)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -347,14 +348,14 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                   >
                     {file.name}
                   </a>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="text-xs text-zinc-400">
                     {formatFileSize(file.size)}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleFileDelete(file)}
-                  className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
+                  className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-700"
                   aria-label="Remove file"
                 >
                   <Trash2 size={16} />
@@ -365,7 +366,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
+          <button onClick={onClose} className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm">Cancel</button>
           <button
             disabled={!valid}
             onClick={() =>
@@ -382,7 +383,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 files,
               })
             }
-            className="rounded-full bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            className="rounded-full bg-white px-3 py-2 text-sm text-black disabled:opacity-50"
           >
             Save
           </button>
@@ -409,23 +410,23 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 rounded-md bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800 cursor-grab active:cursor-grabbing">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-0.5 cursor-grab active:cursor-grabbing">
       <input
         type="checkbox"
         checked={item.checked}
         onChange={(e) => onCheck(e.target.checked)}
-        className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
+        className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-white/20"
       />
       <input
         placeholder="Checklist item"
         value={item.text}
         onChange={(e) => onTextChange(e.target.value)}
-        className={`flex-1 bg-transparent px-2 py-0.5 text-sm outline-none ${item.checked ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}`}
+        className={`flex-1 bg-transparent px-2 py-0.5 text-sm outline-none ${item.checked ? 'line-through text-zinc-500' : ''}`}
       />
       <button
         type="button"
         onClick={onDelete}
-        className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
+        className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-700"
         aria-label="Remove checklist item"
       >
         <Trash2 size={14} />
@@ -434,33 +435,3 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
   );
 }
 
-function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
-  const [mouseDownTarget, setMouseDownTarget] = useState<EventTarget | null>(null);
-
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={(e) => {
-        // Track where the mouse down occurred
-        setMouseDownTarget(e.target);
-      }}
-      onClick={(e) => {
-        // Only close if both mousedown and click occurred on the backdrop
-        // This prevents closing when selecting text that extends outside the modal
-        if (e.target === e.currentTarget && mouseDownTarget === e.currentTarget) {
-          onClose();
-        }
-        setMouseDownTarget(null);
-      }}
-    >
-      <div className="w-full max-w-2xl rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Close"><X size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}

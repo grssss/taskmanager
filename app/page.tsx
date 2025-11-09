@@ -12,7 +12,7 @@ import { getRootPages } from "@/lib/types";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
-  const [workspaceState, setWorkspaceState, storageLoading, syncStatus] = useWorkspaceStorage();
+  const [workspaceState, setWorkspaceState, storageLoading, syncStatus, historyActions] = useWorkspaceStorage();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Start collapsed on mobile
 
   // Detect screen size and set initial sidebar state
@@ -34,6 +34,39 @@ export default function Home() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Global keyboard shortcuts for undo, redo, and save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Z or Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        if (historyActions.canUndo) {
+          e.preventDefault();
+          historyActions.undo();
+        }
+      }
+      // Ctrl+Y or Cmd+Shift+Z for redo
+      else if (
+        ((e.ctrlKey || e.metaKey) && e.key === 'y') ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')
+      ) {
+        if (historyActions.canRedo) {
+          e.preventDefault();
+          historyActions.redo();
+        }
+      }
+      // Ctrl+S or Cmd+S for manual save
+      else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        historyActions.saveNow();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [historyActions]);
 
   if (authLoading || storageLoading) {
     return (
@@ -118,11 +151,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* Debug Panel - Always show for now to help debug */}
-      <WorkspaceDebugPanel
-        workspaceState={workspaceState}
-        onFix={handleFixData}
-      />
+      {/* Debug Panel - Only show for specific account */}
+      {user.email === 'temppookerrr2@gmail.com' && (
+        <WorkspaceDebugPanel
+          workspaceState={workspaceState}
+          onFix={handleFixData}
+        />
+      )}
 
       {/* Warning if no pages in sidebar */}
       {hasNoPagesInSidebar && (
