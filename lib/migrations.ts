@@ -99,42 +99,128 @@ export function convertProjectToWorkspace(
 
 /**
  * Main migration function: AppState → WorkspaceState
+ * Now creates ONE workspace with multiple database pages (one per project)
  */
 export function migrateAppStateToWorkspaceState(
   appState: AppState
 ): WorkspaceState {
+  const now = new Date().toISOString();
+  const workspaceId = `workspace-${uid()}`;
   const allPages: Record<string, Page> = {};
-  const workspaces: Workspace[] = [];
 
-  // Convert each project to a workspace
+  // Create a single workspace
+  const workspace: Workspace = {
+    id: workspaceId,
+    name: "Personal Workspace",
+    icon: "📋",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // Create a welcome document page (root)
+  const welcomePageId = `page-${uid()}`;
+  const welcomePage: Page = {
+    id: welcomePageId,
+    workspaceId,
+    title: "Welcome",
+    icon: "👋",
+    type: "document",
+    position: 0,
+    collapsed: false,
+    createdAt: now,
+    updatedAt: now,
+    content: [
+      {
+        id: `block-${uid()}`,
+        type: "heading1",
+        content: "Welcome to your workspace!",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: `block-${uid()}`,
+        type: "paragraph",
+        content: "Your projects have been migrated to database pages. Click on each page in the sidebar to view your tasks.",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+  };
+  allPages[welcomePageId] = welcomePage;
+
+  // Create a database page for each project
+  const projectIcons = ["✅", "🎯", "💼", "📊", "🚀", "💡", "⭐", "🔥", "📈", "🎨"];
+  let activeDatabasePageId: string | undefined;
+
   appState.projects.forEach((project, index) => {
-    const { workspace, pages } = convertProjectToWorkspace(project, index);
-    workspaces.push(workspace);
-    Object.assign(allPages, pages);
+    const databasePageId = `page-${uid()}`;
+
+    const databaseConfig: DatabaseConfig = {
+      boardState: project.board,
+      primaryView: "kanban",
+    };
+
+    const databasePage: Page = {
+      id: databasePageId,
+      workspaceId,
+      title: project.name || `Project ${index + 1}`,
+      icon: projectIcons[index % projectIcons.length],
+      type: "database",
+      position: index + 1, // Start after welcome page
+      collapsed: false,
+      createdAt: now,
+      updatedAt: now,
+      databaseConfig,
+    };
+
+    allPages[databasePageId] = databasePage;
+
+    // Set the active page to the previously active project
+    if (project.id === appState.activeProjectId) {
+      activeDatabasePageId = databasePageId;
+    }
   });
 
-  // Determine active workspace and page
-  const activeProjectIndex = appState.projects.findIndex(
-    (p) => p.id === appState.activeProjectId
-  );
-  const activeWorkspace =
-    workspaces[Math.max(0, activeProjectIndex)] || workspaces[0];
+  // If no active page was found, use the first database page
+  if (!activeDatabasePageId) {
+    activeDatabasePageId = Object.values(allPages).find(p => p.type === "database")?.id;
+  }
 
-  // Find the first database page in the active workspace
-  const activeWorkspacePages = Object.values(allPages).filter(
-    (p) => p.workspaceId === activeWorkspace?.id
-  );
-  const activeDatabasePage = activeWorkspacePages.find(
-    (p) => p.type === "database"
-  );
-
-  return {
-    activeWorkspaceId: activeWorkspace?.id || "",
-    activePageId: activeDatabasePage?.id,
-    workspaces,
+  const migratedState: WorkspaceState = {
+    activeWorkspaceId: workspace.id,
+    activePageId: activeDatabasePageId,
+    workspaces: [workspace],
     pages: allPages,
     sidebarCollapsed: false,
   };
+
+  // Validate the migrated state
+  console.log('[Migration] Validating migrated state...');
+  console.log('[Migration] Projects migrated:', appState.projects.length);
+  console.log('[Migration] Pages created:', Object.keys(allPages).length);
+  console.log('[Migration] Workspace ID:', workspace.id);
+  console.log('[Migration] Active page ID:', activeDatabasePageId);
+
+  // Log each migrated project as a page
+  appState.projects.forEach((project, index) => {
+    const correspondingPage = Object.values(allPages).find(p => p.title === project.name || p.title === `${project.name} Tasks`);
+    console.log(`[Migration] Project "${project.name}" -> Page:`, correspondingPage ? {
+      id: correspondingPage.id,
+      title: correspondingPage.title,
+      workspaceId: correspondingPage.workspaceId,
+      type: correspondingPage.type,
+      position: correspondingPage.position
+    } : 'NOT FOUND');
+  });
+
+  const validation = validateWorkspaceState(migratedState);
+  if (!validation.valid) {
+    console.error('[Migration] Validation failed:', validation.errors);
+  } else {
+    console.log('[Migration] Validation passed ✓');
+  }
+
+  return migratedState;
 }
 
 /**

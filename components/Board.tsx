@@ -375,9 +375,9 @@ export default function Board() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-20">
-      <header className="mb-6 flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-20 min-h-screen bg-background">
+      <header className="mb-6 flex flex-col gap-4 relative z-40">
+        <div className="flex flex-wrap items-center gap-3 bg-background">
           <label
             htmlFor="project-select"
             className="text-sm font-medium text-zinc-600 dark:text-zinc-300"
@@ -388,10 +388,10 @@ export default function Board() {
             id="project-select"
             value={appState.activeProjectId}
             onChange={(event) => handleSelectProject(event.target.value)}
-            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40"
+            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40 cursor-pointer"
           >
             {appState.projects.map((project) => (
-              <option key={project.id} value={project.id}>
+              <option key={project.id} value={project.id} className="bg-white text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
                 {project.name}
               </option>
             ))}

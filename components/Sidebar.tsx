@@ -138,6 +138,13 @@ export default function Sidebar({
     workspaceState.activeWorkspaceId
   );
 
+  // Debug logging
+  console.log('[Sidebar] Active Workspace ID:', workspaceState.activeWorkspaceId);
+  console.log('[Sidebar] Total pages in state:', Object.keys(workspaceState.pages).length);
+  console.log('[Sidebar] Root pages found:', rootPages.length);
+  console.log('[Sidebar] Root pages:', rootPages.map(p => ({ id: p.id, title: p.title, workspaceId: p.workspaceId, parentPageId: p.parentPageId })));
+  console.log('[Sidebar] All pages:', Object.values(workspaceState.pages).map(p => ({ id: p.id, title: p.title, workspaceId: p.workspaceId, parentPageId: p.parentPageId })));
+
   return (
     <>
       {/* Backdrop for workspace menu */}

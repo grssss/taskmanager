@@ -5,6 +5,7 @@ import { supabase } from './supabase'
 import { useAuth } from './AuthContext'
 import { WorkspaceState, defaultWorkspaceState } from './types'
 import { ensureWorkspaceState } from './migrations'
+import { autoFixWorkspaceState, analyzeWorkspaceState } from './dataRecovery'
 
 export function useWorkspaceStorage(): [
   WorkspaceState,
@@ -120,17 +121,31 @@ export function useWorkspaceStorage(): [
             loadedState = result.state
             wasMigrated = result.migrated
 
+            // Auto-fix common issues after migration
+            console.log('Running auto-fix on migrated state...')
+            const analysis = analyzeWorkspaceState(loadedState)
+            if (analysis.warnings.length > 0 || analysis.errors.length > 0) {
+              console.warn('Issues found in migrated state:', analysis)
+              const { fixed, report } = autoFixWorkspaceState(loadedState)
+              if (report.fixes.length > 0) {
+                console.log('Auto-fixes applied:', report.fixes)
+                loadedState = fixed
+              }
+            } else {
+              console.log('Migrated state is valid, no fixes needed')
+            }
+
             // Try to save migrated state - if workspace_state column doesn't exist, it will fail silently
             if (wasMigrated) {
               try {
                 await supabase
                   .from('user_data')
                   .update({
-                    app_state: appState, // Keep old state
+                    app_state: loadedState, // Save the fixed state
                     updated_at: new Date().toISOString(),
                   } as any)
                   .eq('user_id', user.id)
-                console.log('Migration complete - workspace_state will be saved on next update')
+                console.log('Migration complete - fixed state saved')
               } catch (err) {
                 console.warn('Could not update database (workspace_state column may not exist yet):', err)
               }
