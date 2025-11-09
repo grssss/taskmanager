@@ -138,12 +138,12 @@ export function useWorkspaceStorage(): [
             // Try to save migrated state - if workspace_state column doesn't exist, it will fail silently
             if (wasMigrated) {
               try {
-                await supabase
+                await (supabase as any)
                   .from('user_data')
                   .update({
                     app_state: loadedState, // Save the fixed state
                     updated_at: new Date().toISOString(),
-                  } as any)
+                  })
                   .eq('user_id', user.id)
                 console.log('Migration complete - fixed state saved')
               } catch (err) {
