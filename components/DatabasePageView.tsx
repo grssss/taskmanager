@@ -231,7 +231,7 @@ export default function DatabasePageView({
               onClick={() => setViewMode("kanban")}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
                 viewMode === "kanban"
-                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
                   : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
               }`}
             >
@@ -241,7 +241,7 @@ export default function DatabasePageView({
               onClick={() => setViewMode("table")}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
                 viewMode === "table"
-                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
                   : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
               }`}
             >
@@ -420,7 +420,7 @@ function FilterChip({ label, selected, onClick, color }: FilterChipProps) {
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-all ${
         selected
-          ? "bg-black text-white shadow dark:bg-white dark:text-black"
+          ? "bg-black text-white shadow dark:bg-zinc-700 dark:text-zinc-200"
           : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
       }`}
       style={

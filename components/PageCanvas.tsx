@@ -50,13 +50,19 @@ export default function PageCanvas({
   }
 
   const breadcrumbs = getPagePath(pages, activePageId);
+  const workspacePages = Object.values(pages).filter(
+    (page) => page.workspaceId === workspaceState.activeWorkspaceId
+  );
 
   return (
     <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
       {/* Breadcrumb */}
       <div className="border-b border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-950 px-6 py-3">
-        <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {breadcrumbs.map((page, index) => (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+          {breadcrumbs.length === 0 && (
+            <span className="text-zinc-400 dark:text-zinc-500">Workspace</span>
+          )}
+          {breadcrumbs.slice(0, -1).map((page, index) => (
             <div key={page.id} className="flex items-center gap-2">
               {index > 0 && <ChevronRight size={14} />}
               <button
@@ -68,6 +74,19 @@ export default function PageCanvas({
               </button>
             </div>
           ))}
+          {breadcrumbs.length > 1 && <ChevronRight size={14} />}
+          <select
+            value={activePageId}
+            onChange={(e) => onPageSelect(e.target.value)}
+            className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-zinc-700 shadow-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-white/30"
+          >
+            {workspacePages.map((page) => (
+              <option key={page.id} value={page.id}>
+                {page.icon ? `${page.icon} ` : ""}
+                {page.title || "Untitled"}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
