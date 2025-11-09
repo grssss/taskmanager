@@ -53,6 +53,13 @@ export default function DocumentPageView({
     setIsEditingTitle(page.title === "Untitled");
   }, [page.id, page.title]);
 
+  // Sync title state when page changes
+  useEffect(() => {
+    setTitle(page.title);
+    // Auto-enable editing for new "Untitled" pages
+    setIsEditingTitle(page.title === "Untitled");
+  }, [page.id, page.title]);
+
   const handleTitleSave = () => {
     if (title.trim() && title !== page.title) {
       const newState = updatePage(workspaceState, page.id, { title: title.trim() });
