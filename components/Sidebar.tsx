@@ -140,9 +140,17 @@ export default function Sidebar({
 
   return (
     <>
+      {/* Backdrop for workspace menu */}
+      {showWorkspaceMenu && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => setShowWorkspaceMenu(false)}
+        />
+      )}
+
       <div className="w-64 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col h-screen">
         {/* Header */}
-        <div className="p-4 border-b border-black/10 dark:border-white/10">
+        <div className="p-4 border-b border-black/10 dark:border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
@@ -162,6 +170,26 @@ export default function Sidebar({
             </button>
           </div>
 
+          {/* Workspace selector dropdown */}
+          {showWorkspaceMenu && (
+            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden">
+              {workspaceState.workspaces.map((workspace) => (
+                <button
+                  key={workspace.id}
+                  onClick={() => handleSwitchWorkspace(workspace.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                    workspace.id === workspaceState.activeWorkspaceId
+                      ? "bg-zinc-100 dark:bg-zinc-700"
+                      : "hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                  }`}
+                >
+                  <span>{workspace.icon}</span>
+                  <span className="truncate">{workspace.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Search */}
           <div className="relative">
             <Search
@@ -176,26 +204,6 @@ export default function Sidebar({
               className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
             />
           </div>
-
-          {/* Workspace selector dropdown */}
-          {showWorkspaceMenu && (
-            <div className="mt-2 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-lg overflow-hidden">
-              {workspaceState.workspaces.map((workspace) => (
-                <button
-                  key={workspace.id}
-                  onClick={() => handleSwitchWorkspace(workspace.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                    workspace.id === workspaceState.activeWorkspaceId
-                      ? "bg-zinc-100 dark:bg-zinc-700"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-750"
-                  }`}
-                >
-                  <span>{workspace.icon}</span>
-                  <span className="truncate">{workspace.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Pages list */}
