@@ -657,14 +657,7 @@ function PageTreeItem({
             className="flex-1 bg-zinc-800 border border-white/20 rounded px-1 py-0.5 text-sm outline-none focus:ring-1 focus:ring-white/40"
           />
         ) : (
-          <span
-            className="truncate flex-1 text-left"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStartRename(page.id);
-              setRenameValue(page.title);
-            }}
-          >
+          <span className="truncate flex-1 text-left">
             {page.icon && <span className="mr-1">{page.icon}</span>}
             {page.title}
           </span>
