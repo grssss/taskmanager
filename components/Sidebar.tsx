@@ -323,17 +323,17 @@ function PageTreeItem({
           {page.title}
         </span>
 
-        <button
+        <span
           onClick={(e) => {
             e.stopPropagation();
             handleContextMenu(e as any);
           }}
-          className={`shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+          className={`shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${
             isActive ? "opacity-100" : ""
           }`}
         >
           <MoreHorizontal size={14} />
-        </button>
+        </span>
       </button>
 
       {/* Children */}

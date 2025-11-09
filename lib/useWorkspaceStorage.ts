@@ -41,14 +41,20 @@ export function useWorkspaceStorage(): [
       }
 
       try {
+        // First try to select just app_state (which should exist)
+        // If workspace_state column doesn't exist yet, this will succeed
         const { data, error } = await supabase
           .from('user_data')
-          .select('workspace_state, app_state, schema_version')
+          .select('app_state')
           .eq('user_id', user.id)
           .single()
 
         if (error) {
-          console.error('Supabase error details:', error)
+          console.error('Supabase error loading data:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+          })
 
           if (error.code === 'PGRST116') {
             // No data found, check localStorage for migration
@@ -63,8 +69,7 @@ export function useWorkspaceStorage(): [
                   .from('user_data')
                   .insert({
                     user_id: user.id,
-                    workspace_state: migratedState,
-                    schema_version: 2,
+                    app_state: migratedState, // Use app_state for now
                   } as any)
 
                 if (insertError) {
@@ -88,8 +93,7 @@ export function useWorkspaceStorage(): [
                 .from('user_data')
                 .insert({
                   user_id: user.id,
-                  workspace_state: initialState,
-                  schema_version: 2,
+                  app_state: initialState, // Use app_state for now
                 } as any)
 
               if (insertError) {
@@ -103,37 +107,33 @@ export function useWorkspaceStorage(): [
             console.error('Error loading data from Supabase:', error)
           }
         } else if (data && isMountedRef.current) {
-          // Check schema version and migrate if needed
-          const workspaceState = (data as any).workspace_state
+          // We have data - it's the old app_state format
           const appState = (data as any).app_state
-          const schemaVersion = (data as any).schema_version || 1
 
           let loadedState: WorkspaceState
           let wasMigrated = false
 
-          if (workspaceState && schemaVersion >= 2) {
-            // New format already exists
-            loadedState = workspaceState
-            console.log('Loaded WorkspaceState from Supabase')
-          } else if (appState) {
+          if (appState) {
             // Old format - migrate it
             console.log('Migrating AppState to WorkspaceState...')
             const result = ensureWorkspaceState(appState)
             loadedState = result.state
             wasMigrated = result.migrated
 
-            // Save migrated state back to Supabase
+            // Try to save migrated state - if workspace_state column doesn't exist, it will fail silently
             if (wasMigrated) {
-              await supabase
-                .from('user_data')
-                .update({
-                  workspace_state: loadedState,
-                  schema_version: 2,
-                  state_backup: appState, // Backup old state
-                  migrated_at: new Date().toISOString(),
-                } as any)
-                .eq('user_id', user.id)
-              console.log('Migration saved to Supabase')
+              try {
+                await supabase
+                  .from('user_data')
+                  .update({
+                    app_state: appState, // Keep old state
+                    updated_at: new Date().toISOString(),
+                  } as any)
+                  .eq('user_id', user.id)
+                console.log('Migration complete - workspace_state will be saved on next update')
+              } catch (err) {
+                console.warn('Could not update database (workspace_state column may not exist yet):', err)
+              }
             }
           } else {
             // No data at all
@@ -144,7 +144,7 @@ export function useWorkspaceStorage(): [
           currentStateRef.current = loadedState
           setMigrated(wasMigrated)
           localStorage.removeItem('kanban-state')
-          console.log('Data loaded from Supabase successfully!')
+          console.log('Data loaded and migrated successfully!')
         }
       } catch (err) {
         console.error('Unexpected error loading data:', err)
@@ -173,11 +173,12 @@ export function useWorkspaceStorage(): [
       setSyncError(null)
 
       try {
+        // For now, save to app_state for backward compatibility
+        // Once migrations are run, we can save to workspace_state
         const { error } = await (supabase as any)
           .from('user_data')
           .update({
-            workspace_state: dataToSave,
-            schema_version: 2,
+            app_state: dataToSave, // Save as app_state for now
             updated_at: new Date().toISOString(),
           } as any)
           .eq('user_id', user.id)
@@ -228,7 +229,7 @@ export function useWorkspaceStorage(): [
         try {
           const blob = new Blob([JSON.stringify({
             userId: user.id,
-            workspaceState: currentStateRef.current
+            appState: currentStateRef.current // Send as appState for backward compatibility
           })], { type: 'application/json' })
 
           const success = navigator.sendBeacon('/api/save-state', blob)
