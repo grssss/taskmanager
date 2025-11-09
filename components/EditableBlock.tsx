@@ -7,7 +7,10 @@ import SlashCommandMenu from "./SlashCommandMenu";
 
 interface EditableBlockProps {
   block: ContentBlock;
+  blockIndex: number;
+  allBlocks: ContentBlock[];
   onUpdate: (blockId: string, content: string) => void;
+  onMetadataUpdate?: (blockId: string, metadata: Record<string, unknown>) => void;
   onDelete: (blockId: string) => void;
   onCreate: (afterBlockId: string, type: ContentBlockType) => void;
   onMergeWithPrevious: (blockId: string) => void;
@@ -42,7 +45,10 @@ function isMobileDevice(): boolean {
 
 export default function EditableBlock({
   block,
+  blockIndex,
+  allBlocks,
   onUpdate,
+  onMetadataUpdate,
   onDelete,
   onCreate,
   onMergeWithPrevious,
@@ -58,11 +64,36 @@ export default function EditableBlock({
   const [isEditing, setIsEditing] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
-  const [todoChecked, setTodoChecked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
+
+  // Get todo checked state from metadata
+  const todoChecked = block.metadata?.checked === true;
+
+  // Get toggle collapsed state from metadata
+  const toggleCollapsed = block.metadata?.collapsed === true;
+
+  // Get indent level from metadata (0-4)
+  const indentLevel = Math.min(4, Math.max(0, (block.metadata?.indentLevel as number) || 0));
+
+  // Calculate numbered list position (count consecutive numbered lists before this block)
+  const getListNumber = (): number => {
+    if (block.type !== "numberedList") return 1;
+
+    let count = 1;
+    for (let i = blockIndex - 1; i >= 0; i--) {
+      if (allBlocks[i].type === "numberedList") {
+        count++;
+      } else {
+        break; // Stop when we hit a non-numbered-list block
+      }
+    }
+    return count;
+  };
+
+  const listNumber = getListNumber();
 
   // Detect mobile device on mount
   useEffect(() => {
@@ -157,8 +188,20 @@ export default function EditableBlock({
         return;
       }
 
-      // Create new block after current one
-      onCreate(block.id, "paragraph");
+      // Notion-style list behavior
+      const isListType = ["bulletList", "numberedList", "todoList", "toggleList"].includes(block.type);
+      const isEmpty = content.trim() === "";
+
+      if (isListType && isEmpty) {
+        // Exit list mode: convert empty list item to paragraph
+        onTypeChange(block.id, "paragraph");
+      } else if (isListType) {
+        // Continue the list: create same type
+        onCreate(block.id, block.type);
+      } else {
+        // Default: create new paragraph
+        onCreate(block.id, "paragraph");
+      }
     }
 
     // Handle Backspace at start of block
@@ -190,6 +233,34 @@ export default function EditableBlock({
     if (e.key === "ArrowDown" && cursorAtEnd && nextBlockId) {
       e.preventDefault();
       onFocus?.(nextBlockId);
+    }
+
+    // Handle Tab for list indentation
+    if (e.key === "Tab") {
+      const isListType = ["bulletList", "numberedList", "todoList", "toggleList"].includes(block.type);
+
+      if (isListType && onMetadataUpdate) {
+        e.preventDefault();
+
+        if (e.shiftKey) {
+          // Shift+Tab: Decrease indent
+          if (indentLevel > 0) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              indentLevel: indentLevel - 1
+            });
+          }
+        } else {
+          // Tab: Increase indent (max 4 levels)
+          if (indentLevel < 4) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              indentLevel: indentLevel + 1
+            });
+          }
+        }
+        return;
+      }
     }
 
     // Handle slash menu navigation
@@ -287,26 +358,33 @@ export default function EditableBlock({
 
       case "bulletList":
         return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="text-zinc-500 mt-1.5 select-none">•</span>
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <span className="text-zinc-500 select-none">•</span>
             <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
       case "numberedList":
         return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="text-zinc-500 mt-1.5 select-none min-w-[1.5rem]">1.</span>
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <span className="text-zinc-500 select-none min-w-[1.5rem] text-right">{listNumber}.</span>
             <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
       case "todoList":
         return (
-          <div className="flex items-start gap-2 mb-1">
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
             <button
-              onClick={() => setTodoChecked(!todoChecked)}
-              className="mt-1.5 w-4 h-4 border-2 border-zinc-400 rounded flex items-center justify-center hover:border-zinc-600 transition-colors"
+              onClick={() => {
+                if (onMetadataUpdate) {
+                  onMetadataUpdate(block.id, {
+                    ...block.metadata,
+                    checked: !todoChecked
+                  });
+                }
+              }}
+              className="mt-0.5 w-4 h-4 border-2 border-zinc-400 rounded flex items-center justify-center hover:border-zinc-600 transition-colors flex-shrink-0"
             >
               {todoChecked && <Check size={12} className="text-zinc-600" />}
             </button>
@@ -353,30 +431,90 @@ export default function EditableBlock({
 
       case "toggleList":
         return (
-          <div className="mb-1">
-            <div className="flex items-start gap-2">
+          <div className="mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <div className="flex items-baseline gap-1.5">
               <button
                 onClick={() => {
-                  // Toggle state would be stored in metadata
+                  if (onMetadataUpdate) {
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      collapsed: !toggleCollapsed
+                    });
+                  }
                 }}
-                className="mt-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className={`text-zinc-500 hover:text-zinc-300 transition-all duration-200 flex-shrink-0 ${
+                  toggleCollapsed ? "" : "rotate-90"
+                }`}
+                style={{ transformOrigin: "center" }}
               >
                 ▶
               </button>
               <div {...commonProps} className={`${commonProps.className} flex-1 font-medium`} />
             </div>
+            {!toggleCollapsed && (
+              <div className="ml-6 mt-1 text-zinc-500 text-sm italic">
+                Toggle content area (child blocks feature coming soon)
+              </div>
+            )}
           </div>
         );
 
       case "callout":
+        const calloutTheme = (block.metadata?.theme as string) || "info";
+        const calloutEmoji = (block.metadata?.emoji as string) || "💡";
+
+        const calloutThemes = {
+          info: { bg: "bg-blue-500/10", border: "border-blue-500", text: "text-blue-100", icon: "text-blue-500" },
+          warning: { bg: "bg-yellow-500/10", border: "border-yellow-500", text: "text-yellow-100", icon: "text-yellow-500" },
+          error: { bg: "bg-red-500/10", border: "border-red-500", text: "text-red-100", icon: "text-red-500" },
+          success: { bg: "bg-green-500/10", border: "border-green-500", text: "text-green-100", icon: "text-green-500" },
+          purple: { bg: "bg-purple-500/10", border: "border-purple-500", text: "text-purple-100", icon: "text-purple-500" },
+        };
+
+        const theme = calloutThemes[calloutTheme as keyof typeof calloutThemes] || calloutThemes.info;
+
         return (
-          <div className="my-2 bg-blue-500/10 border-l-4 border-blue-500 rounded-r-lg p-4">
+          <div className={`my-2 ${theme.bg} border-l-4 ${theme.border} rounded-r-lg p-4 group`}>
             <div className="flex items-start gap-3">
-              <span className="text-blue-500 text-xl mt-0.5">💡</span>
+              <button
+                onClick={() => {
+                  if (onMetadataUpdate) {
+                    const emojis = ["💡", "⚠️", "❌", "✅", "📝", "🔔", "⭐", "🎯"];
+                    const currentIndex = emojis.indexOf(calloutEmoji);
+                    const nextEmoji = emojis[(currentIndex + 1) % emojis.length];
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      emoji: nextEmoji
+                    });
+                  }
+                }}
+                className={`${theme.icon} text-xl mt-0.5 hover:scale-110 transition-transform cursor-pointer`}
+                title="Click to change emoji"
+              >
+                {calloutEmoji}
+              </button>
               <div
                 {...commonProps}
-                className={`${commonProps.className} flex-1 text-blue-100`}
+                className={`${commonProps.className} flex-1 ${theme.text}`}
               />
+              <select
+                value={calloutTheme}
+                onChange={(e) => {
+                  if (onMetadataUpdate) {
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      theme: e.target.value
+                    });
+                  }
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-800 text-zinc-200 text-xs px-2 py-1 rounded border border-zinc-700"
+              >
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="success">Success</option>
+                <option value="purple">Purple</option>
+              </select>
             </div>
           </div>
         );
@@ -421,115 +559,349 @@ export default function EditableBlock({
         );
 
       case "image":
+        const imageUrl = (block.metadata?.url as string) || "";
+
         return (
-          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
-            <div className="text-center text-zinc-500 mb-2">
-              <div className="text-sm mb-2">🖼️ Image</div>
-              <button className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs transition-colors">
-                Upload Image
-              </button>
-            </div>
-            <div
-              {...commonProps}
-              className={`${commonProps.className} text-xs text-center`}
-            />
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50">
+            {imageUrl ? (
+              <div>
+                <img
+                  src={imageUrl}
+                  alt="Block image"
+                  className="w-full object-cover"
+                  style={{ maxHeight: '500px' }}
+                />
+                <div className="p-2 border-t border-zinc-700">
+                  <div
+                    {...commonProps}
+                    className={`${commonProps.className} text-xs text-zinc-400`}
+                    data-placeholder="Add caption..."
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 text-center text-zinc-500">
+                <div className="text-sm mb-2">🖼️ Image</div>
+                <input
+                  type="text"
+                  placeholder="Paste image URL..."
+                  value={imageUrl}
+                  onChange={(e) => {
+                    if (onMetadataUpdate) {
+                      onMetadataUpdate(block.id, {
+                        ...block.metadata,
+                        url: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500 mb-2"
+                />
+                <div className="text-xs text-zinc-600 mt-2">Or upload from Supabase storage (coming soon)</div>
+              </div>
+            )}
           </div>
         );
 
       case "file":
+        const fileUrl = (block.metadata?.url as string) || "";
+        const fileName = (block.metadata?.name as string) || fileUrl.split('/').pop() || "File";
+
         return (
           <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
-            <div className="text-center text-zinc-500 mb-2">
-              <div className="text-sm mb-2">📎 File Attachment</div>
-              <button className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs transition-colors">
-                Upload File
-              </button>
-            </div>
-            <div
-              {...commonProps}
-              className={`${commonProps.className} text-xs text-center`}
-            />
+            {fileUrl ? (
+              <div>
+                <a
+                  href={fileUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <div className="text-2xl">📎</div>
+                  <div className="flex-1">
+                    <div className="text-sm text-zinc-200">{fileName}</div>
+                    <div className="text-xs text-zinc-500">Click to download</div>
+                  </div>
+                </a>
+              </div>
+            ) : (
+              <div className="text-center text-zinc-500">
+                <div className="text-sm mb-2">📎 File Attachment</div>
+                <input
+                  type="text"
+                  placeholder="Paste file URL..."
+                  value={fileUrl}
+                  onChange={(e) => {
+                    if (onMetadataUpdate) {
+                      onMetadataUpdate(block.id, {
+                        ...block.metadata,
+                        url: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500 mb-2"
+                />
+                <div className="text-xs text-zinc-600 mt-2">Or upload to Supabase storage (coming soon)</div>
+              </div>
+            )}
           </div>
         );
 
       case "video":
+        const videoUrl = (block.metadata?.url as string) || "";
+
+        // Extract YouTube ID from various URL formats
+        const getYouTubeId = (url: string) => {
+          const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+          return match ? match[1] : null;
+        };
+
+        const youtubeId = getYouTubeId(videoUrl);
+
         return (
-          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
-            <div className="text-center text-zinc-500">
-              <div className="text-sm mb-2">🎥 Video</div>
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50">
+            {youtubeId ? (
+              <div className="aspect-video">
+                <iframe
+                  src={`https://www.youtube.com/embed/${youtubeId}`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            ) : (
+              <div className="p-4 text-center text-zinc-500">
+                <div className="text-sm mb-2">🎥 Video</div>
+                <input
+                  type="text"
+                  placeholder="Paste YouTube URL..."
+                  value={videoUrl}
+                  onChange={(e) => {
+                    if (onMetadataUpdate) {
+                      onMetadataUpdate(block.id, {
+                        ...block.metadata,
+                        url: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+            <div className="p-2 border-t border-zinc-700">
               <div
                 {...commonProps}
-                className={`${commonProps.className} text-xs`}
-                data-placeholder="Paste YouTube/Vimeo URL or upload video..."
+                className={`${commonProps.className} text-xs text-zinc-400`}
+                data-placeholder="Add caption..."
               />
             </div>
           </div>
         );
 
       case "audio":
+        const audioUrl = (block.metadata?.url as string) || "";
+
         return (
           <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
-            <div className="text-center text-zinc-500">
-              <div className="text-sm mb-2">🎵 Audio</div>
+            <div className="text-zinc-500">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🎵</span>
+                <span className="text-sm font-medium">Audio</span>
+              </div>
+              {audioUrl ? (
+                <audio controls className="w-full mb-2">
+                  <source src={audioUrl} />
+                  Your browser does not support the audio element.
+                </audio>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Paste audio URL (mp3, wav, ogg)..."
+                  value={audioUrl}
+                  onChange={(e) => {
+                    if (onMetadataUpdate) {
+                      onMetadataUpdate(block.id, {
+                        ...block.metadata,
+                        url: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500 mb-2"
+                />
+              )}
               <div
                 {...commonProps}
                 className={`${commonProps.className} text-xs`}
-                data-placeholder="Paste audio URL or upload file..."
+                data-placeholder="Add caption..."
               />
             </div>
           </div>
         );
 
       case "bookmark":
+        const bookmarkUrl = (block.metadata?.url as string) || "";
+
+        // Extract domain from URL
+        const getDomain = (url: string) => {
+          try {
+            const urlObj = new URL(url);
+            return urlObj.hostname.replace('www.', '');
+          } catch {
+            return "";
+          }
+        };
+
+        const domain = getDomain(bookmarkUrl);
+
         return (
-          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
-            <div className="text-zinc-500">
-              <div className="text-sm mb-2">🔖 Bookmark</div>
-              <div
-                {...commonProps}
-                className={`${commonProps.className} text-xs`}
-                data-placeholder="Paste a URL to create a link preview..."
-              />
-            </div>
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 hover:border-zinc-600 transition-colors">
+            {bookmarkUrl ? (
+              <a
+                href={bookmarkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium text-zinc-200 mb-1">{domain || "Link"}</div>
+                    <div className="text-xs text-zinc-500 truncate">{bookmarkUrl}</div>
+                  </div>
+                  <div className="text-2xl">🔖</div>
+                </div>
+              </a>
+            ) : (
+              <div className="p-4">
+                <div className="text-zinc-500">
+                  <div className="text-sm mb-2">🔖 Bookmark</div>
+                  <input
+                    type="text"
+                    placeholder="Paste URL..."
+                    value={bookmarkUrl}
+                    onChange={(e) => {
+                      if (onMetadataUpdate) {
+                        onMetadataUpdate(block.id, {
+                          ...block.metadata,
+                          url: e.target.value
+                        });
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         );
 
       case "embed":
+        const embedCode = (block.metadata?.embedCode as string) || "";
+
         return (
           <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
             <div className="text-zinc-500">
               <div className="text-sm mb-2">🌐 Embed</div>
-              <div
-                {...commonProps}
-                className={`${commonProps.className} text-xs`}
-                data-placeholder="Paste embed URL or code..."
+              <textarea
+                placeholder="Paste iframe embed code..."
+                value={embedCode}
+                onChange={(e) => {
+                  if (onMetadataUpdate) {
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      embedCode: e.target.value
+                    });
+                  }
+                }}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 outline-none focus:border-blue-500 font-mono mb-2"
+                rows={3}
               />
+              {embedCode && (
+                <div
+                  className="mt-2"
+                  dangerouslySetInnerHTML={{ __html: embedCode }}
+                />
+              )}
             </div>
           </div>
         );
 
       case "date":
+        const dateValue = (block.metadata?.date as string) || "";
+        const formattedDate = dateValue ? new Date(dateValue).toLocaleDateString('en-US', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : "";
+
         return (
           <div className="mb-1 inline-block">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors group">
               <span className="text-zinc-400">📅</span>
+              <input
+                type="date"
+                value={dateValue}
+                onChange={(e) => {
+                  if (onMetadataUpdate) {
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      date: e.target.value
+                    });
+                  }
+                }}
+                className="text-sm bg-transparent border-none outline-none text-zinc-200 cursor-pointer"
+                style={{ colorScheme: 'dark' }}
+              />
+              {formattedDate && (
+                <span className="text-xs text-zinc-500 ml-1">({formattedDate})</span>
+              )}
               <div
                 {...commonProps}
-                className={`${commonProps.className} text-sm`}
-                data-placeholder="Add a date..."
+                className={`${commonProps.className} text-sm ml-2`}
+                data-placeholder="Add note..."
               />
             </div>
           </div>
         );
 
       case "tag":
+        const tagColor = (block.metadata?.color as string) || "purple";
+
+        const tagColors = {
+          purple: { bg: "bg-purple-500/20", border: "border-purple-500/30", text: "text-purple-300" },
+          blue: { bg: "bg-blue-500/20", border: "border-blue-500/30", text: "text-blue-300" },
+          green: { bg: "bg-green-500/20", border: "border-green-500/30", text: "text-green-300" },
+          yellow: { bg: "bg-yellow-500/20", border: "border-yellow-500/30", text: "text-yellow-300" },
+          red: { bg: "bg-red-500/20", border: "border-red-500/30", text: "text-red-300" },
+          pink: { bg: "bg-pink-500/20", border: "border-pink-500/30", text: "text-pink-300" },
+          gray: { bg: "bg-zinc-500/20", border: "border-zinc-500/30", text: "text-zinc-300" },
+        };
+
+        const tagTheme = tagColors[tagColor as keyof typeof tagColors] || tagColors.purple;
+
         return (
-          <div className="mb-1 inline-block">
-            <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
-              <span className="text-purple-400">🏷️</span>
+          <div className="mb-1 inline-block group/tag">
+            <div className={`flex items-center gap-2 px-3 py-1 ${tagTheme.bg} border ${tagTheme.border} rounded-full`}>
+              <button
+                onClick={() => {
+                  if (onMetadataUpdate) {
+                    const colors = ["purple", "blue", "green", "yellow", "red", "pink", "gray"];
+                    const currentIndex = colors.indexOf(tagColor);
+                    const nextColor = colors[(currentIndex + 1) % colors.length];
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      color: nextColor
+                    });
+                  }
+                }}
+                className="text-xs opacity-50 group-hover/tag:opacity-100 transition-opacity"
+                title="Click to change color"
+              >
+                🏷️
+              </button>
               <div
                 {...commonProps}
-                className={`${commonProps.className} text-sm text-purple-300`}
+                className={`${commonProps.className} text-sm ${tagTheme.text}`}
                 data-placeholder="Tag name..."
               />
             </div>
@@ -537,6 +909,8 @@ export default function EditableBlock({
         );
 
       case "progressBar":
+        const progress = Math.min(100, Math.max(0, (block.metadata?.progress as number) || 0));
+
         return (
           <div className="my-2">
             <div className="mb-2">
@@ -546,13 +920,47 @@ export default function EditableBlock({
                 data-placeholder="Progress label..."
               />
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-zinc-800 rounded-full overflow-hidden cursor-pointer"
+              onClick={(e) => {
+                if (onMetadataUpdate) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const newProgress = Math.round((x / rect.width) * 100);
+                  onMetadataUpdate(block.id, {
+                    ...block.metadata,
+                    progress: newProgress
+                  });
+                }
+              }}
+              title="Click to adjust progress"
+            >
               <div
-                className="h-full bg-blue-500 transition-all"
-                style={{ width: "50%" }}
+                className={`h-full transition-all ${
+                  progress >= 100 ? "bg-green-500" : progress >= 75 ? "bg-blue-500" : progress >= 50 ? "bg-yellow-500" : "bg-orange-500"
+                }`}
+                style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="text-xs text-zinc-500 mt-1 text-right">50%</div>
+            <div className="flex items-center justify-between mt-1">
+              <input
+                type="number"
+                value={progress}
+                onChange={(e) => {
+                  if (onMetadataUpdate) {
+                    const val = parseInt(e.target.value) || 0;
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      progress: Math.min(100, Math.max(0, val))
+                    });
+                  }
+                }}
+                min="0"
+                max="100"
+                className="text-xs text-zinc-400 bg-transparent border-none outline-none w-12"
+              />
+              <span className="text-xs text-zinc-500">%</span>
+            </div>
           </div>
         );
 

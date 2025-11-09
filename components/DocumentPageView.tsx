@@ -84,6 +84,16 @@ export default function DocumentPageView({
     onStateChange(newState);
   };
 
+  const handleMetadataUpdate = (blockId: string, metadata: Record<string, unknown>) => {
+    const updatedContent = (page.content || []).map((block) =>
+      block.id === blockId
+        ? { ...block, metadata, updatedAt: new Date().toISOString() }
+        : block
+    );
+    const newState = updatePage(workspaceState, page.id, { content: updatedContent });
+    onStateChange(newState);
+  };
+
   const handleBlockCreate = (afterBlockId: string, type: ContentBlockType) => {
     const newBlock = createBlock(type);
     const currentContent = page.content || [];
@@ -176,6 +186,11 @@ export default function DocumentPageView({
     );
     const newState = updatePage(workspaceState, page.id, { content: updatedContent });
     onStateChange(newState);
+
+    // Re-focus the block after type change (double setTimeout ensures DOM updates complete)
+    setTimeout(() => {
+      setTimeout(() => setFocusedBlockId(blockId), 0);
+    }, 0);
   };
 
   const handleAddFirstBlock = () => {
@@ -233,7 +248,10 @@ export default function DocumentPageView({
             <EditableBlock
               key={block.id}
               block={block}
+              blockIndex={index}
+              allBlocks={page.content}
               onUpdate={handleBlockUpdate}
+              onMetadataUpdate={handleMetadataUpdate}
               onDelete={handleBlockDelete}
               onCreate={handleBlockCreate}
               onMergeWithPrevious={handleBlockMerge}
