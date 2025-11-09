@@ -18,21 +18,21 @@ export default function MobileHome({
     workspaceState.activeWorkspaceId
   );
 
-  // Get recently accessed pages (for now, just show first 3 pages)
-  const recentPages = rootPages.slice(0, 3);
+  // Get recently accessed pages (for now, just show first 6 pages)
+  const recentPages = rootPages.slice(0, 6);
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950 pb-20">
       {/* Jump back in section */}
       {recentPages.length > 0 && (
-        <div className="px-4 pt-6 pb-4">
-          <h2 className="text-sm font-medium text-zinc-400 mb-3">Jump back in</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        <div className="pt-6 pb-4">
+          <h2 className="text-sm font-medium text-zinc-400 mb-3 px-4">Jump back in</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 px-4 snap-x snap-mandatory scroll-smooth">
             {recentPages.map((page) => (
               <button
                 key={page.id}
                 onClick={() => onPageSelect(page.id)}
-                className="flex-shrink-0 w-40 h-32 bg-zinc-900 rounded-lg border border-white/10 p-4 flex flex-col items-start justify-between hover:bg-zinc-800 transition-colors"
+                className="flex-shrink-0 w-40 h-32 bg-zinc-900 rounded-lg border border-white/10 p-4 flex flex-col items-start justify-between hover:bg-zinc-800 transition-colors snap-start"
               >
                 <div className="w-10 h-10 flex items-center justify-center text-zinc-400">
                   {page.type === "database" ? (
