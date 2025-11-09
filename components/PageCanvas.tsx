@@ -72,53 +72,58 @@ export default function PageCanvas({
     (page) => page.workspaceId === workspaceState.activeWorkspaceId
   );
 
+  const isDocument = isDocumentPage(activePage);
+  const hideChromeOnMobile = isMobile && isDocument;
+
   return (
     <div className="flex-1 flex flex-col bg-zinc-950 overflow-hidden">
       {/* Breadcrumb */}
-      <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
-          {/* Mobile back button */}
-          {isMobile && onBackClick && (
-            <button
-              onClick={onBackClick}
-              className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100 transition-colors mr-2"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          {breadcrumbs.length === 0 && (
-            <span className="text-zinc-500">Workspace</span>
-          )}
-          {breadcrumbs.slice(0, -1).map((page, index) => (
-            <div key={page.id} className="flex items-center gap-2">
-              {index > 0 && <ChevronRight size={14} />}
+      {!hideChromeOnMobile && (
+        <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+            {/* Mobile back button */}
+            {isMobile && onBackClick && (
               <button
-                onClick={() => onPageSelect(page.id)}
-                className="hover:text-zinc-100 transition-colors"
+                onClick={onBackClick}
+                className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100 transition-colors mr-2"
               >
-                {page.icon && <span className="mr-1">{page.icon}</span>}
-                {page.title}
+                <ArrowLeft size={18} />
               </button>
-            </div>
-          ))}
-          {breadcrumbs.length > 1 && <ChevronRight size={14} />}
-          <select
-            value={activePageId}
-            onChange={(e) => onPageSelect(e.target.value)}
-            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-white/30"
-          >
-            {workspacePages.map((page) => (
-              <option key={page.id} value={page.id}>
-                {page.icon ? `${page.icon} ` : ""}
-                {page.title || "Untitled"}
-              </option>
+            )}
+            {breadcrumbs.length === 0 && (
+              <span className="text-zinc-500">Workspace</span>
+            )}
+            {breadcrumbs.slice(0, -1).map((page, index) => (
+              <div key={page.id} className="flex items-center gap-2">
+                {index > 0 && <ChevronRight size={14} />}
+                <button
+                  onClick={() => onPageSelect(page.id)}
+                  className="hover:text-zinc-100 transition-colors"
+                >
+                  {page.icon && <span className="mr-1">{page.icon}</span>}
+                  {page.title}
+                </button>
+              </div>
             ))}
-          </select>
+            {breadcrumbs.length > 1 && <ChevronRight size={14} />}
+            <select
+              value={activePageId}
+              onChange={(e) => onPageSelect(e.target.value)}
+              className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-white/30"
+            >
+              {workspacePages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.icon ? `${page.icon} ` : ""}
+                  {page.title || "Untitled"}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Page content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto ${hideChromeOnMobile ? 'pt-0' : ''}`}>
         {isDatabasePage(activePage) ? (
           <DatabasePageView
             page={activePage}
@@ -131,6 +136,7 @@ export default function PageCanvas({
             workspaceState={workspaceState}
             onStateChange={onStateChange}
             onEditingChange={onEditingChange}
+            onBackClick={isMobile ? onBackClick : undefined}
           />
         ) : (
           <div className="p-6">

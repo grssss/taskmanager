@@ -143,7 +143,7 @@ export default function Home() {
       {!isMobile && <UserProfile />}
 
       {/* Mobile: Show Notion-style top bar */}
-      {isClient && isMobile && (
+      {isClient && isMobile && !isEditingDocument && (
         <MobileTopBar
           workspaceState={workspaceState}
           onWorkspaceChange={handleWorkspaceChange}

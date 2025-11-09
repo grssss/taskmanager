@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { WorkspaceState, Page, ContentBlock, ContentBlockType } from "@/lib/types";
 import { updatePage } from "@/lib/pageUtils";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft, Share2, MoreHorizontal } from "lucide-react";
 import EditableBlock from "./EditableBlock";
 import MobileBlockToolbar from "./MobileBlockToolbar";
 
@@ -12,6 +12,7 @@ interface DocumentPageViewProps {
   workspaceState: WorkspaceState;
   onStateChange: (state: WorkspaceState) => void;
   onEditingChange?: (isEditing: boolean) => void;
+  onBackClick?: () => void;
 }
 
 export default function DocumentPageView({
@@ -19,12 +20,14 @@ export default function DocumentPageView({
   workspaceState,
   onStateChange,
   onEditingChange,
+  onBackClick,
 }: DocumentPageViewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(page.title);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
   // Detect mobile
   useEffect(() => {
@@ -200,8 +203,136 @@ export default function DocumentPageView({
     setTimeout(() => setFocusedBlockId(newBlock.id), 10);
   };
 
+  const pageUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+
+  const handleCopyLink = async () => {
+    const nav = typeof navigator !== "undefined" ? navigator : undefined;
+    if (nav?.clipboard) {
+      try {
+        await nav.clipboard.writeText(pageUrl);
+      } catch (error) {
+        console.warn("Failed to copy link", error);
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    const nav =
+      typeof navigator !== "undefined"
+        ? (navigator as Navigator & { share?: (data: ShareData) => Promise<void> })
+        : undefined;
+    try {
+      if (nav?.share) {
+        await nav.share({
+          title: page.title,
+          text: page.title,
+          url: pageUrl,
+        });
+      } else {
+        await handleCopyLink();
+      }
+    } catch (error) {
+      console.warn("Share cancelled or failed", error);
+    }
+  };
+
+  const mobileChromeHeight = 72;
+  const mobileTopPadding = isMobile
+    ? `calc(env(safe-area-inset-top, 0px) + ${mobileChromeHeight}px)`
+    : undefined;
+
   return (
-    <div className={`mx-auto max-w-3xl ${isMobile ? 'px-4 py-4' : 'px-6 py-8'} ${showToolbar ? 'pb-32' : ''}`}>
+    <div
+      className={`mx-auto max-w-3xl ${isMobile ? "px-4" : "px-6 py-8"} ${
+        showToolbar ? "pb-32" : ""
+      }`}
+      style={isMobile ? { paddingTop: mobileTopPadding } : undefined}
+    >
+      {/* Mobile floating controls */}
+      {isMobile && (
+        <>
+          <div
+            className="pointer-events-none fixed left-0 right-0 z-30"
+            style={{
+              top: 0,
+              height: "calc(env(safe-area-inset-top, 0px) + 72px)",
+              background:
+                "linear-gradient(180deg, rgba(12,12,12,0.95) 0%, rgba(12,12,12,0.8) 60%, rgba(12,12,12,0) 100%)",
+            }}
+          />
+          <div
+            className="fixed left-4 right-4 z-40 flex items-center justify-between"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 10px)",
+            }}
+          >
+            <button
+              onClick={() => onBackClick?.()}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShare}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
+              >
+                <Share2 size={18} />
+              </button>
+              <button
+                onClick={() => setShowOptionsMenu(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            </div>
+          </div>
+
+          {showOptionsMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowOptionsMenu(false)}
+              />
+              <div
+                className="fixed right-4 z-50 w-48 rounded-2xl border border-white/10 bg-zinc-900/95 text-sm text-zinc-100 shadow-2xl backdrop-blur"
+                style={{
+                  top: "calc(env(safe-area-inset-top, 0px) + 60px)",
+                }}
+              >
+                <button
+                  className="w-full px-4 py-3 text-left hover:bg-white/5 transition"
+                  onClick={() => {
+                    console.log("Add to favorites");
+                    setShowOptionsMenu(false);
+                  }}
+                >
+                  Add to favorites
+                </button>
+                <button
+                  className="w-full px-4 py-3 text-left hover:bg-white/5 transition"
+                  onClick={() => {
+                    handleCopyLink();
+                    setShowOptionsMenu(false);
+                  }}
+                >
+                  Copy link
+                </button>
+                <button
+                  className="w-full px-4 py-3 text-left text-red-400 hover:bg-red-500/10 transition"
+                  onClick={() => {
+                    console.log("Move to trash");
+                    setShowOptionsMenu(false);
+                  }}
+                >
+                  Move to trash
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      )}
       {/* Page Icon & Title - Simplified for mobile */}
       <div className={isMobile ? 'mb-4' : 'mb-8'}>
         {!isMobile && page.icon && (
