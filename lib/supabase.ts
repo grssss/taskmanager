@@ -12,6 +12,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    redirectTo: typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback`
+      : undefined,
   },
 })
 
