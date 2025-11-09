@@ -66,7 +66,19 @@ This will create:
 2. Make sure **Email** is enabled (it should be enabled by default)
 3. Optional: Configure email templates under **Authentication** > **Email Templates**
 
-### 6. Run Your Application
+### 6. Configure Redirect URLs
+
+**IMPORTANT:** This step is required for email verification to work properly.
+
+1. In your Supabase dashboard, go to **Authentication** > **URL Configuration**
+2. Under **Redirect URLs**, add the following URLs:
+   - For development: `http://localhost:3000/auth/callback`
+   - For production: `https://yourdomain.com/auth/callback` (replace with your actual domain)
+3. Click **Save**
+
+This tells Supabase where to redirect users after they click the confirmation link in their email.
+
+### 7. Run Your Application
 
 ```bash
 npm run dev
@@ -140,7 +152,9 @@ When deploying to production (Vercel, Netlify, etc.):
 1. Add the environment variables in your hosting platform's dashboard
 2. Configure custom email templates in Supabase
 3. Set up a custom domain for your app
-4. Configure redirect URLs in Supabase: **Authentication** > **URL Configuration**
+4. **Add your production callback URL** in Supabase: **Authentication** > **URL Configuration**
+   - Add `https://yourdomain.com/auth/callback` to the Redirect URLs list
+   - Make sure to keep the localhost URL for local development
 5. Consider upgrading your Supabase plan for higher limits
 
 ## Support
