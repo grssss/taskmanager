@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { Plus, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -86,21 +86,20 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div>
           <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Status:</label>
-          <input
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            placeholder="Enter status description"
-            className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
-          />
-
-          <div className="mt-3 flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            <input
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+            />
             <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add checklist item">
               <Plus size={18} />
             </button>
           </div>
+
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleChecklistDragEnd}>
             <SortableContext items={checklist.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div className="mt-2 space-y-1.5">
                 {checklist.map((item, i) => (
                   <SortableChecklistItem
                     key={item.id}
@@ -119,7 +118,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Categories</label>
-            <div className="space-y-1 rounded-md bg-zinc-100 p-2 dark:bg-zinc-800">
+            <div className="space-y-1 rounded-md bg-zinc-100 px-2 py-1 dark:bg-zinc-800">
               {categories.length === 0 ? (
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">No categories yet.</p>
               ) : (
@@ -150,11 +149,11 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Due date</label>
-            <input type="date" value={dueDate ? dueDate.slice(0,10) : ""} onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : undefined)} className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
+            <input type="date" value={dueDate ? dueDate.slice(0,10) : ""} onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : undefined)} className="w-full rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800">
+            <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -170,12 +169,28 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
               <Plus size={18} />
             </button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {links.map((l, i) => (
-              <div key={i} className="grid grid-cols-5 items-center gap-2">
-                <input placeholder="Label" value={l.label} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="col-span-2 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
-                <input placeholder="https://" value={l.url} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} className="col-span-3 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
-                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="-ml-1 rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
+              <div key={i} className="flex items-center gap-2">
+                <div className="grid grid-cols-5 flex-1 gap-2">
+                  <input placeholder="Label" value={l.label} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="col-span-2 rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
+                  <input placeholder="https://" value={l.url} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} className="col-span-3 rounded-md bg-zinc-100 px-3 py-0.5 text-sm outline-none dark:bg-zinc-800" />
+                </div>
+                {checklist.length > 0 && (
+                  <select
+                    value={l.checklistItemId ?? ""}
+                    onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, checklistItemId: e.target.value || undefined } : x))}
+                    className="shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-xs outline-none cursor-pointer text-zinc-600 dark:text-zinc-400 dark:bg-zinc-800"
+                  >
+                    <option value="">No status</option>
+                    {checklist.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.text || 'Unnamed'}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
@@ -225,29 +240,26 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-        <GripVertical size={16} />
-      </div>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 rounded-md bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800 cursor-grab active:cursor-grabbing">
       <input
         type="checkbox"
         checked={item.checked}
         onChange={(e) => onCheck(e.target.checked)}
-        className="h-4 w-4 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
+        className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
       />
       <input
         placeholder="Checklist item"
         value={item.text}
         onChange={(e) => onTextChange(e.target.value)}
-        className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+        className={`flex-1 bg-transparent px-2 py-0.5 text-sm outline-none ${item.checked ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}`}
       />
       <button
         type="button"
         onClick={onDelete}
-        className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
         aria-label="Remove checklist item"
       >
-        <Trash2 size={16} />
+        <Trash2 size={14} />
       </button>
     </div>
   );
