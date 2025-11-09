@@ -21,6 +21,25 @@ interface EditableBlockProps {
   isLast: boolean;
 }
 
+/**
+ * Detect if the device is mobile (phone or tablet)
+ * Returns true for mobile devices, false for desktop
+ */
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+
+  // Check user agent for mobile indicators
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+
+  // Also check for touch-only devices (no mouse)
+  const isTouchOnly =
+    'ontouchstart' in window &&
+    !window.matchMedia('(pointer: fine)').matches;
+
+  return mobileRegex.test(userAgent) || isTouchOnly;
+}
+
 export default function EditableBlock({
   block,
   onUpdate,
@@ -41,8 +60,14 @@ export default function EditableBlock({
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
   const [todoChecked, setTodoChecked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
+
+  // Detect mobile device on mount
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
 
   // Focus on the block when editing starts
   useEffect(() => {
@@ -91,8 +116,8 @@ export default function EditableBlock({
     if (contentRef.current) {
       const newContent = contentRef.current.innerText;
 
-      // Check for slash command at start
-      if (newContent.startsWith("/") && newContent.length > 1) {
+      // Only enable slash commands on desktop (not on mobile devices)
+      if (!isMobile && newContent.startsWith("/") && newContent.length > 1) {
         setShowSlashMenu(true);
         setSlashMenuQuery(newContent.slice(1).toLowerCase());
       } else {
@@ -557,7 +582,8 @@ export default function EditableBlock({
       case "code":
         return "Code";
       default:
-        return isHovered ? "Type '/' for commands" : "";
+        // Only show slash command hint on desktop devices
+        return isHovered && !isMobile ? "Type '/' for commands" : "";
     }
   };
 
