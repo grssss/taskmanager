@@ -180,7 +180,7 @@ export default function EditableBlock({
       },
       onBlur: () => setIsEditing(false),
       "data-placeholder": placeholder,
-      className: `${baseClasses} empty:before:content-[attr(data-placeholder)] empty:before:text-zinc-400 empty:before:cursor-text`,
+      className: `${baseClasses} empty:hover:before:content-[attr(data-placeholder)] empty:hover:before:text-zinc-400 empty:hover:before:cursor-text empty:focus:before:content-[attr(data-placeholder)] empty:focus:before:text-zinc-400 empty:focus:before:cursor-text`,
     };
 
     switch (block.type) {
