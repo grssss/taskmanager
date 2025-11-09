@@ -93,13 +93,14 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
           />
 
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Task Checklist</span>
-            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
+          <div className="mt-3 flex items-center justify-end">
+            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add checklist item">
+              <Plus size={18} />
+            </button>
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleChecklistDragEnd}>
             <SortableContext items={checklist.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="mt-2 space-y-2">
+              <div className="space-y-2">
                 {checklist.map((item, i) => (
                   <SortableChecklistItem
                     key={item.id}
@@ -165,7 +166,9 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="block text-xs text-zinc-600 dark:text-zinc-400">Links</label>
-            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
+            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add link">
+              <Plus size={18} />
+            </button>
           </div>
           <div className="space-y-2">
             {links.map((l, i) => (
