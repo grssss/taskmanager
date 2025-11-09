@@ -8,7 +8,7 @@ interface EditableBlockProps {
   block: ContentBlock;
   onUpdate: (blockId: string, content: string) => void;
   onDelete: (blockId: string) => void;
-  onCreate: (afterBlockId: string, type: ContentBlockType) => void;
+  onCreate: (afterBlockId: string, type: ContentBlockType, initialContent?: string) => void;
   onMergeWithPrevious: (blockId: string) => void;
   onTypeChange: (blockId: string, newType: ContentBlockType) => void;
   onFocus?: (blockId: string) => void;
@@ -51,6 +51,58 @@ export default function EditableBlock({
     }
   }, [isEditing]);
 
+  // Helper function to get cursor position
+  const getCursorPosition = (): number => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return 0;
+
+    const range = selection.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    if (!contentRef.current) return 0;
+
+    preCaretRange.selectNodeContents(contentRef.current);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    return preCaretRange.toString().length;
+  };
+
+  // Helper function to set cursor position
+  const setCursorPosition = (position: number) => {
+    if (!contentRef.current) return;
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    let currentPos = 0;
+    let targetNode: Node | null = null;
+    let targetOffset = 0;
+
+    const findPosition = (node: Node): boolean => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textLength = node.textContent?.length || 0;
+        if (currentPos + textLength >= position) {
+          targetNode = node;
+          targetOffset = position - currentPos;
+          return true;
+        }
+        currentPos += textLength;
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          if (findPosition(node.childNodes[i])) return true;
+        }
+      }
+      return false;
+    };
+
+    findPosition(contentRef.current);
+
+    if (targetNode) {
+      range.setStart(targetNode, targetOffset);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  };
+
   const handleInput = () => {
     if (contentRef.current) {
       const newContent = contentRef.current.innerText;
@@ -70,8 +122,10 @@ export default function EditableBlock({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    const cursorAtStart = window.getSelection()?.anchorOffset === 0;
-    const cursorAtEnd = window.getSelection()?.anchorOffset === target.innerText.length;
+    const selection = window.getSelection();
+    const cursorPosition = getCursorPosition();
+    const cursorAtStart = cursorPosition === 0;
+    const cursorAtEnd = cursorPosition === target.innerText.length;
 
     // Handle Enter key
     if (e.key === "Enter" && !e.shiftKey) {
@@ -83,8 +137,16 @@ export default function EditableBlock({
         return;
       }
 
-      // Create new block after current one
-      onCreate(block.id, "paragraph");
+      // Split content at cursor position
+      const currentContent = target.innerText;
+      const contentBeforeCursor = currentContent.substring(0, cursorPosition);
+      const contentAfterCursor = currentContent.substring(cursorPosition);
+
+      // Update current block with content before cursor
+      onUpdate(block.id, contentBeforeCursor);
+
+      // Create new block with content after cursor
+      onCreate(block.id, "paragraph", contentAfterCursor);
     }
 
     // Handle Backspace at start of block

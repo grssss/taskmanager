@@ -52,8 +52,8 @@ export default function DocumentPageView({
     onStateChange(newState);
   };
 
-  const handleBlockCreate = (afterBlockId: string, type: ContentBlockType) => {
-    const newBlock = createBlock(type);
+  const handleBlockCreate = (afterBlockId: string, type: ContentBlockType, initialContent?: string) => {
+    const newBlock = createBlock(type, initialContent || "");
     const currentContent = page.content || [];
     const insertIndex = currentContent.findIndex((b) => b.id === afterBlockId);
 
