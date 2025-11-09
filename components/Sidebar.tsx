@@ -249,7 +249,7 @@ export default function Sidebar({
 
       <div className="w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen">
         {/* Header */}
-        <div className="p-4 border-b border-black/10 dark:border-white/10 relative">
+        <div className="p-4 border-b border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
@@ -308,7 +308,7 @@ export default function Sidebar({
         {/* Pages list */}
         <div className="flex-1 overflow-y-auto p-2">
           <div className="flex items-center justify-between mb-2 px-2 relative">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-medium">
+            <span className="text-xs text-zinc-400 uppercase font-medium">
               Pages
             </span>
             <button
@@ -396,7 +396,7 @@ export default function Sidebar({
               Add subpage
               <ChevronRight size={14} className="ml-auto" />
             </button>
-            <div className="border-t border-black/10 dark:border-white/10 my-1" />
+            <div className="border-t border-white/10 my-1" />
             <button
               onClick={() => {
                 handleDeletePage(contextMenu.pageId);

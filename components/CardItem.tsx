@@ -74,12 +74,12 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 break-words">{card.title}</h3>
+          <h3 className="text-sm font-medium text-zinc-100 break-words">{card.title}</h3>
           {card.status ? (
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 break-words">{card.status}</p>
+            <p className="mt-0.5 text-xs text-zinc-400 break-words">{card.status}</p>
           ) : null}
           {card.description ? (
-            <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400 break-words">{card.description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-zinc-400 break-words">{card.description}</p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {cardCategories.map((category) => (
@@ -143,7 +143,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
             >
               <span className="shrink-0">{getFileIcon(file.type)}</span>
               <span className="truncate">{file.name}</span>
-              <span className="shrink-0 text-[10px] text-zinc-500 dark:text-zinc-400">({formatFileSize(file.size)})</span>
+              <span className="shrink-0 text-[10px] text-zinc-400">({formatFileSize(file.size)})</span>
             </a>
           ))}
         </div>

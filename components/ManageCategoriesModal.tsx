@@ -41,7 +41,7 @@ export default function ManageCategoriesModal({ open, categories, onSave, onClos
         {local.map((c) => (
           <div key={c.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 p-2">
             <button
-              className="h-6 w-6 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+              className="h-6 w-6 shrink-0 rounded-full border border-white/10"
               style={{ backgroundColor: c.color || "#64748b" }}
               onClick={() => setPickerFor(pickerFor === c.id ? null : c.id)}
               aria-label="Pick color"

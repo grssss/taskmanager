@@ -218,7 +218,7 @@ export default function TableView({
         <tbody>
           {sortedCards.length === 0 ? (
             <tr>
-              <td colSpan={11} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
+              <td colSpan={11} className="px-4 py-8 text-center text-zinc-400">
                 No cards to display
               </td>
             </tr>
@@ -237,11 +237,11 @@ export default function TableView({
                   onClick={() => onEdit(card.id)}
                 >
                   <td className="px-4 py-3 max-w-xs">
-                    <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    <div className="font-medium text-zinc-100 truncate">
                       {card.title}
                     </div>
                     {card.description && (
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                      <div className="text-xs text-zinc-400 truncate mt-0.5">
                         {card.description}
                       </div>
                     )}
@@ -271,7 +271,7 @@ export default function TableView({
                         </span>
                       ))}
                       {cardCategories.length === 0 && (
-                        <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                        <span className="text-zinc-500 text-xs">—</span>
                       )}
                     </div>
                   </td>
@@ -292,11 +292,11 @@ export default function TableView({
                         {formatDate(card.dueDate!)}
                       </span>
                     ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                      <span className="text-zinc-500 text-xs">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                    <span className="text-xs text-zinc-400">
                       {formatCreatedAgo(card.createdAt)}
                     </span>
                   </td>
@@ -315,13 +315,13 @@ export default function TableView({
                           </Link>
                         ))}
                         {card.links.length > 2 && (
-                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                          <span className="text-[10px] text-zinc-400">
                             +{card.links.length - 2}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                      <span className="text-zinc-500 text-xs">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -340,13 +340,13 @@ export default function TableView({
                           </a>
                         ))}
                         {card.files.length > 2 && (
-                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                          <span className="text-[10px] text-zinc-400">
                             +{card.files.length - 2}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                      <span className="text-zinc-500 text-xs">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -355,7 +355,7 @@ export default function TableView({
                         {checkedCount}/{totalCount}
                       </span>
                     ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                      <span className="text-zinc-500 text-xs">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">

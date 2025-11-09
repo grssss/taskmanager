@@ -23,10 +23,10 @@ export default function PageCanvas({
     return (
       <div className="flex-1 flex items-center justify-center bg-zinc-950">
         <div className="text-center">
-          <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+          <p className="text-zinc-400 mb-4">
             No page selected
           </p>
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">
+          <p className="text-sm text-zinc-500">
             Select a page from the sidebar or create a new one
           </p>
         </div>
@@ -41,7 +41,7 @@ export default function PageCanvas({
       <div className="flex-1 flex items-center justify-center bg-zinc-950">
         <div className="text-center">
           <p className="text-red-500 mb-2">Page not found</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-zinc-400">
             Page ID: {activePageId}
           </p>
         </div>
@@ -58,16 +58,16 @@ export default function PageCanvas({
     <div className="flex-1 flex flex-col bg-zinc-950 overflow-hidden">
       {/* Breadcrumb */}
       <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
           {breadcrumbs.length === 0 && (
-            <span className="text-zinc-400 dark:text-zinc-500">Workspace</span>
+            <span className="text-zinc-500">Workspace</span>
           )}
           {breadcrumbs.slice(0, -1).map((page, index) => (
             <div key={page.id} className="flex items-center gap-2">
               {index > 0 && <ChevronRight size={14} />}
               <button
                 onClick={() => onPageSelect(page.id)}
-                className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="hover:text-zinc-100 transition-colors"
               >
                 {page.icon && <span className="mr-1">{page.icon}</span>}
                 {page.title}

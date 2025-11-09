@@ -24,7 +24,7 @@ export default function ColumnView({ column, cards, categories, onAdd, onEdit, o
     <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-3 shadow-sm backdrop-blur">
       <header className="mb-2 flex items-center justify-between px-1">
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{column.name}</h2>
-        <button onClick={onAdd} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add card">
+        <button onClick={onAdd} className="p-1 text-zinc-400 hover:text-zinc-300" aria-label="Add card">
           <Plus size={18} />
         </button>
       </header>

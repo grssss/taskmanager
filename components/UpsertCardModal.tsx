@@ -174,12 +174,12 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     <Dialog open={open} onClose={onClose} title={card ? "Edit Task" : "New Task"}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Title</label>
+          <label className="mb-1 block text-xs text-zinc-400">Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md bg-zinc-800 px-3 py-2 text-sm outline-none" />
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Description</label>
+            <label className="block text-xs text-zinc-400">Description</label>
             {description && (
               <button
                 type="button"
@@ -195,14 +195,14 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Status:</label>
+          <label className="mb-1 block text-xs text-zinc-400">Status:</label>
           <div className="flex items-center gap-2">
             <input
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className="flex-1 rounded-md bg-zinc-800 px-3 py-2 text-sm outline-none"
             />
-            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add checklist item">
+            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="p-1 text-zinc-400 hover:text-zinc-300" aria-label="Add checklist item">
               <Plus size={18} />
             </button>
           </div>
@@ -227,10 +227,10 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Categories</label>
+            <label className="mb-1 block text-xs text-zinc-400">Categories</label>
             <div className="space-y-1 rounded-md bg-zinc-800 px-2 py-1">
               {categories.length === 0 ? (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">No categories yet.</p>
+                <p className="text-xs text-zinc-400">No categories yet.</p>
               ) : (
                 categories.map((c) => {
                   const selected = categoryIds.includes(c.id);
@@ -238,7 +238,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                     <label key={c.id} className="flex items-center gap-2 text-xs font-medium">
                       <input
                         type="checkbox"
-                        className="h-3.5 w-3.5 rounded border border-black/20 dark:border-white/20"
+                        className="h-3.5 w-3.5 rounded border border-white/20"
                         checked={selected}
                         onChange={() =>
                           setCategoryIds((ids) =>
@@ -258,11 +258,11 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Due date</label>
+            <label className="mb-1 block text-xs text-zinc-400">Due date</label>
             <input type="date" value={dueDate ? dueDate.slice(0,10) : ""} onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : undefined)} className="w-full rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Priority</label>
+            <label className="mb-1 block text-xs text-zinc-400">Priority</label>
             <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className="w-full rounded-md bg-zinc-800 px-3 py-0.5 text-sm outline-none">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -274,8 +274,8 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Links</label>
-            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" aria-label="Add link">
+            <label className="block text-xs text-zinc-400">Links</label>
+            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="p-1 text-zinc-400 hover:text-zinc-300" aria-label="Add link">
               <Plus size={18} />
             </button>
           </div>
@@ -308,10 +308,10 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">
+            <label className="block text-xs text-zinc-400">
               Files ({files.length}/{MAX_FILES})
             </label>
-            <label className="cursor-pointer p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+            <label className="cursor-pointer p-1 text-zinc-400 hover:text-zinc-300">
               <input
                 type="file"
                 multiple
@@ -336,7 +336,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           <div className="space-y-1.5">
             {files.map((file) => (
               <div key={file.id} className="flex items-center gap-2 rounded-md bg-zinc-800 px-3 py-2">
-                <div className="text-zinc-600 dark:text-zinc-400">
+                <div className="text-zinc-400">
                   {getFileIcon(file.type)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -348,7 +348,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                   >
                     {file.name}
                   </a>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="text-xs text-zinc-400">
                     {formatFileSize(file.size)}
                   </div>
                 </div>
@@ -415,13 +415,13 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
         type="checkbox"
         checked={item.checked}
         onChange={(e) => onCheck(e.target.checked)}
-        className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
+        className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-white/20"
       />
       <input
         placeholder="Checklist item"
         value={item.text}
         onChange={(e) => onTextChange(e.target.value)}
-        className={`flex-1 bg-transparent px-2 py-0.5 text-sm outline-none ${item.checked ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}`}
+        className={`flex-1 bg-transparent px-2 py-0.5 text-sm outline-none ${item.checked ? 'line-through text-zinc-500' : ''}`}
       />
       <button
         type="button"
