@@ -12,6 +12,7 @@ interface PageCanvasProps {
   onStateChange: (state: WorkspaceState) => void;
   onPageSelect: (pageId: string) => void;
   onBackClick?: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 export default function PageCanvas({
@@ -19,6 +20,7 @@ export default function PageCanvas({
   onStateChange,
   onPageSelect,
   onBackClick,
+  onEditingChange,
 }: PageCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -128,6 +130,7 @@ export default function PageCanvas({
             page={activePage}
             workspaceState={workspaceState}
             onStateChange={onStateChange}
+            onEditingChange={onEditingChange}
           />
         ) : (
           <div className="p-6">

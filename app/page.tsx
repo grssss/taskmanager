@@ -23,6 +23,7 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [mobileView, setMobileView] = useState<'home' | 'search' | 'new' | 'page'>('home');
+  const [isEditingDocument, setIsEditingDocument] = useState(false);
 
   // Ensure client-side rendering
   useEffect(() => {
@@ -193,6 +194,7 @@ export default function Home() {
                 onStateChange={setWorkspaceState}
                 onPageSelect={handlePageSelect}
                 onBackClick={() => setMobileView('home')}
+                onEditingChange={setIsEditingDocument}
               />
             )}
           </div>
@@ -206,8 +208,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* Mobile: Bottom navigation */}
-      {isClient && isMobile && (
+      {/* Mobile: Bottom navigation - Hide when editing document */}
+      {isClient && isMobile && !isEditingDocument && (
         <MobileBottomNav
           onPagesClick={() => setMobileView('home')}
           onSearchClick={() => setMobileView('search')}
