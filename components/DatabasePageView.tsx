@@ -216,7 +216,7 @@ export default function DatabasePageView({
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-6">
+    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-6 bg-transparent">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

@@ -21,7 +21,7 @@ export default function PageCanvas({
 
   if (!activePageId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="flex-1 flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
         <div className="text-center">
           <p className="text-zinc-500 dark:text-zinc-400 mb-4">
             No page selected
@@ -38,7 +38,7 @@ export default function PageCanvas({
 
   if (!activePage) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="flex-1 flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
         <div className="text-center">
           <p className="text-red-500 mb-2">Page not found</p>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -52,9 +52,9 @@ export default function PageCanvas({
   const breadcrumbs = getPagePath(pages, activePageId);
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
       {/* Breadcrumb */}
-      <div className="border-b border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950 px-6 py-3">
+      <div className="border-b border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-950 px-6 py-3">
         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
           {breadcrumbs.map((page, index) => (
             <div key={page.id} className="flex items-center gap-2">
