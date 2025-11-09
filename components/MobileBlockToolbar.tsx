@@ -44,8 +44,8 @@ export default function MobileBlockToolbar({
     { type: "heading3" as ContentBlockType, label: "Heading 3", icon: Heading3 },
     { type: "bulletList" as ContentBlockType, label: "Bulleted list", icon: List },
     { type: "numberedList" as ContentBlockType, label: "Numbered list", icon: ListOrdered },
-    { type: "todo" as ContentBlockType, label: "To-do list", icon: CheckSquare },
-    { type: "toggle" as ContentBlockType, label: "Toggle list", icon: ChevronRight },
+    { type: "todoList" as ContentBlockType, label: "To-do list", icon: CheckSquare },
+    { type: "toggleList" as ContentBlockType, label: "Toggle list", icon: ChevronRight },
   ];
 
   return (

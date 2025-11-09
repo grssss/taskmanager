@@ -7,7 +7,10 @@ import SlashCommandMenu from "./SlashCommandMenu";
 
 interface EditableBlockProps {
   block: ContentBlock;
+  blockIndex: number;
+  allBlocks: ContentBlock[];
   onUpdate: (blockId: string, content: string) => void;
+  onMetadataUpdate?: (blockId: string, metadata: Record<string, unknown>) => void;
   onDelete: (blockId: string) => void;
   onCreate: (afterBlockId: string, type: ContentBlockType) => void;
   onMergeWithPrevious: (blockId: string) => void;
@@ -42,7 +45,10 @@ function isMobileDevice(): boolean {
 
 export default function EditableBlock({
   block,
+  blockIndex,
+  allBlocks,
   onUpdate,
+  onMetadataUpdate,
   onDelete,
   onCreate,
   onMergeWithPrevious,
@@ -58,11 +64,36 @@ export default function EditableBlock({
   const [isEditing, setIsEditing] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
-  const [todoChecked, setTodoChecked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
+
+  // Get todo checked state from metadata
+  const todoChecked = block.metadata?.checked === true;
+
+  // Get toggle collapsed state from metadata
+  const toggleCollapsed = block.metadata?.collapsed === true;
+
+  // Get indent level from metadata (0-4)
+  const indentLevel = Math.min(4, Math.max(0, (block.metadata?.indentLevel as number) || 0));
+
+  // Calculate numbered list position (count consecutive numbered lists before this block)
+  const getListNumber = (): number => {
+    if (block.type !== "numberedList") return 1;
+
+    let count = 1;
+    for (let i = blockIndex - 1; i >= 0; i--) {
+      if (allBlocks[i].type === "numberedList") {
+        count++;
+      } else {
+        break; // Stop when we hit a non-numbered-list block
+      }
+    }
+    return count;
+  };
+
+  const listNumber = getListNumber();
 
   // Detect mobile device on mount
   useEffect(() => {
@@ -144,8 +175,20 @@ export default function EditableBlock({
         return;
       }
 
-      // Create new block after current one
-      onCreate(block.id, "paragraph");
+      // Notion-style list behavior
+      const isListType = ["bulletList", "numberedList", "todoList", "toggleList"].includes(block.type);
+      const isEmpty = content.trim() === "";
+
+      if (isListType && isEmpty) {
+        // Exit list mode: convert empty list item to paragraph
+        onTypeChange(block.id, "paragraph");
+      } else if (isListType) {
+        // Continue the list: create same type
+        onCreate(block.id, block.type);
+      } else {
+        // Default: create new paragraph
+        onCreate(block.id, "paragraph");
+      }
     }
 
     // Handle Backspace at start of block
@@ -177,6 +220,34 @@ export default function EditableBlock({
     if (e.key === "ArrowDown" && cursorAtEnd && nextBlockId) {
       e.preventDefault();
       onFocus?.(nextBlockId);
+    }
+
+    // Handle Tab for list indentation
+    if (e.key === "Tab") {
+      const isListType = ["bulletList", "numberedList", "todoList", "toggleList"].includes(block.type);
+
+      if (isListType && onMetadataUpdate) {
+        e.preventDefault();
+
+        if (e.shiftKey) {
+          // Shift+Tab: Decrease indent
+          if (indentLevel > 0) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              indentLevel: indentLevel - 1
+            });
+          }
+        } else {
+          // Tab: Increase indent (max 4 levels)
+          if (indentLevel < 4) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              indentLevel: indentLevel + 1
+            });
+          }
+        }
+        return;
+      }
     }
 
     // Handle slash menu navigation
@@ -274,26 +345,33 @@ export default function EditableBlock({
 
       case "bulletList":
         return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="text-zinc-500 mt-1.5 select-none">•</span>
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <span className="text-zinc-500 select-none">•</span>
             <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
       case "numberedList":
         return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="text-zinc-500 mt-1.5 select-none min-w-[1.5rem]">1.</span>
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <span className="text-zinc-500 select-none min-w-[1.5rem] text-right">{listNumber}.</span>
             <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
       case "todoList":
         return (
-          <div className="flex items-start gap-2 mb-1">
+          <div className="flex items-baseline gap-1.5 mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
             <button
-              onClick={() => setTodoChecked(!todoChecked)}
-              className="mt-1.5 w-4 h-4 border-2 border-zinc-400 rounded flex items-center justify-center hover:border-zinc-600 transition-colors"
+              onClick={() => {
+                if (onMetadataUpdate) {
+                  onMetadataUpdate(block.id, {
+                    ...block.metadata,
+                    checked: !todoChecked
+                  });
+                }
+              }}
+              className="mt-0.5 w-4 h-4 border-2 border-zinc-400 rounded flex items-center justify-center hover:border-zinc-600 transition-colors flex-shrink-0"
             >
               {todoChecked && <Check size={12} className="text-zinc-600" />}
             </button>
@@ -340,18 +418,31 @@ export default function EditableBlock({
 
       case "toggleList":
         return (
-          <div className="mb-1">
-            <div className="flex items-start gap-2">
+          <div className="mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
+            <div className="flex items-baseline gap-1.5">
               <button
                 onClick={() => {
-                  // Toggle state would be stored in metadata
+                  if (onMetadataUpdate) {
+                    onMetadataUpdate(block.id, {
+                      ...block.metadata,
+                      collapsed: !toggleCollapsed
+                    });
+                  }
                 }}
-                className="mt-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className={`text-zinc-500 hover:text-zinc-300 transition-all duration-200 flex-shrink-0 ${
+                  toggleCollapsed ? "" : "rotate-90"
+                }`}
+                style={{ transformOrigin: "center" }}
               >
                 ▶
               </button>
               <div {...commonProps} className={`${commonProps.className} flex-1 font-medium`} />
             </div>
+            {!toggleCollapsed && (
+              <div className="ml-6 mt-1 text-zinc-500 text-sm italic">
+                Toggle content area (child blocks feature coming soon)
+              </div>
+            )}
           </div>
         );
 
