@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, Category, Priority, ChecklistItem, FileAttachment } from "@/lib/types";
-import { Plus, Trash2, X, ChevronDown, ChevronUp, Upload, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Upload, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { uploadFile, deleteFile } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
+import Dialog from "./Dialog";
 
 type Props = {
   open: boolean;
@@ -434,33 +435,3 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
   );
 }
 
-function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
-  const [mouseDownTarget, setMouseDownTarget] = useState<EventTarget | null>(null);
-
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={(e) => {
-        // Track where the mouse down occurred
-        setMouseDownTarget(e.target);
-      }}
-      onClick={(e) => {
-        // Only close if both mousedown and click occurred on the backdrop
-        // This prevents closing when selecting text that extends outside the modal
-        if (e.target === e.currentTarget && mouseDownTarget === e.currentTarget) {
-          onClose();
-        }
-        setMouseDownTarget(null);
-      }}
-    >
-      <div className="w-full max-w-2xl rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Close"><X size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}

@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Project } from "@/lib/types";
 import { GripVertical, X } from "lucide-react";
+import Dialog from "./Dialog";
 
 type Props = {
   open: boolean;
@@ -153,7 +154,7 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Manage Projects">
+    <Dialog open={open} onClose={onClose} title="Manage Projects" maxWidth="lg">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={local.map((p) => p.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
@@ -187,36 +188,5 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
         </div>
       </div>
     </Dialog>
-  );
-}
-
-function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }
