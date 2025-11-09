@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
-import { Plus, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, X, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Props = {
   open: boolean;
@@ -22,6 +25,25 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   const [links, setLinks] = useState(card?.links ?? []);
   const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist ?? []);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleChecklistDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setChecklist((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  };
 
   useEffect(() => {
     setTitle(card?.title ?? "");
@@ -65,20 +87,22 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             <label className="block text-xs text-zinc-600 dark:text-zinc-400">Checklist</label>
             <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
           </div>
-          <div className="space-y-2">
-            {checklist.map((item, i) => (
-              <div key={item.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  onChange={(e) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, checked: e.target.checked } : x))}
-                  className="h-4 w-4 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
-                />
-                <input placeholder="Checklist item" value={item.text} onChange={(e) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))} className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
-                <button type="button" onClick={() => setChecklist((arr) => arr.filter((_, idx) => idx !== i))} className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove checklist item"><Trash2 size={16} /></button>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleChecklistDragEnd}>
+            <SortableContext items={checklist.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {checklist.map((item, i) => (
+                  <SortableChecklistItem
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    onCheck={(checked) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, checked } : x))}
+                    onTextChange={(text) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, text } : x))}
+                    onDelete={() => setChecklist((arr) => arr.filter((_, idx) => idx !== i))}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         </div>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -167,6 +191,51 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
       </div>
     </Dialog>
+  );
+}
+
+type SortableChecklistItemProps = {
+  item: ChecklistItem;
+  index: number;
+  onCheck: (checked: boolean) => void;
+  onTextChange: (text: string) => void;
+  onDelete: () => void;
+};
+
+function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }: SortableChecklistItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+        <GripVertical size={16} />
+      </div>
+      <input
+        type="checkbox"
+        checked={item.checked}
+        onChange={(e) => onCheck(e.target.checked)}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
+      />
+      <input
+        placeholder="Checklist item"
+        value={item.text}
+        onChange={(e) => onTextChange(e.target.value)}
+        className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+      />
+      <button
+        type="button"
+        onClick={onDelete}
+        className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        aria-label="Remove checklist item"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
   );
 }
 
