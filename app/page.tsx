@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import AuthForm from "@/components/AuthForm";
 import UserProfile from "@/components/UserProfile";
 import Sidebar from "@/components/Sidebar";
@@ -13,6 +14,26 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [workspaceState, setWorkspaceState, storageLoading, syncStatus, historyActions] = useWorkspaceStorage();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Detect mobile
+  useEffect(() => {
+    if (!isClient) return;
+    const checkMobile = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [isClient]);
 
   // Global keyboard shortcuts for undo, redo, and save
   useEffect(() => {
@@ -69,6 +90,10 @@ export default function Home() {
       ...prev,
       activePageId: pageId,
     }));
+    // Close mobile menu when selecting a page
+    if (isMobile) {
+      setMobileMenuOpen(false);
+    }
   };
 
   const handleFixData = () => {
@@ -97,6 +122,18 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <UserProfile />
+
+      {/* Mobile hamburger menu button */}
+      {isClient && isMobile && !mobileMenuOpen && (
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="fixed top-4 left-4 z-30 p-2 bg-zinc-800 rounded-lg shadow-lg hover:bg-zinc-700 transition-colors md:hidden"
+          title="Open menu"
+        >
+          <Menu size={24} className="text-zinc-100" />
+        </button>
+      )}
+
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
           workspaceState={workspaceState}
@@ -104,6 +141,8 @@ export default function Home() {
           onPageSelect={handlePageSelect}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
         />
         <PageCanvas
           workspaceState={workspaceState}
