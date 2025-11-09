@@ -84,6 +84,7 @@ function sanitizeBoardState(value: unknown): BoardState {
         ...cardValue,
         categoryIds: Array.isArray(cardValue.categoryIds) ? [...cardValue.categoryIds] : cardValue.categoryIds,
         links: Array.isArray(cardValue.links) ? cardValue.links.map((link) => ({ ...link })) : cardValue.links,
+        checklist: Array.isArray(cardValue.checklist) ? cardValue.checklist.map((item) => ({ ...item })) : cardValue.checklist,
       };
     }
   }
@@ -309,6 +310,7 @@ export default function Board() {
         dueDate: card.dueDate ?? existing?.dueDate,
         priority: card.priority ?? existing?.priority ?? "medium",
         links: card.links ?? existing?.links ?? [],
+        checklist: card.checklist ?? existing?.checklist ?? [],
       };
       const cards = { ...prev.cards, [id]: full };
       const columns = prev.columns.map((column) => ({ ...column }));
@@ -334,6 +336,28 @@ export default function Board() {
         cardIds: column.cardIds.filter((cardId) => cardId !== id),
       }));
       return { ...prev, cards, columns };
+    });
+  };
+
+  const updateCardChecklist = (cardId: string, checklistItemId: string, checked: boolean) => {
+    updateActiveBoard((prev) => {
+      const card = prev.cards[cardId];
+      if (!card || !card.checklist) return prev;
+
+      const updatedChecklist = card.checklist.map((item) =>
+        item.id === checklistItemId ? { ...item, checked } : item
+      );
+
+      return {
+        ...prev,
+        cards: {
+          ...prev.cards,
+          [cardId]: {
+            ...card,
+            checklist: updatedChecklist,
+          },
+        },
+      };
     });
   };
 
@@ -527,6 +551,7 @@ export default function Board() {
                   onAdd={() => handleCreate(column.id)}
                   onEdit={(id) => setEditingCard({ id })}
                   onDelete={deleteCard}
+                  onChecklistChange={updateCardChecklist}
                 />
               </div>
             ))}

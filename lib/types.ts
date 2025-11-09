@@ -5,6 +5,12 @@ export interface LinkItem {
   url: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  checked: boolean;
+}
+
 export interface Card {
   id: string;
   title: string;
@@ -14,6 +20,7 @@ export interface Card {
   dueDate?: string; // ISO date
   priority: Priority;
   links?: LinkItem[];
+  checklist?: ChecklistItem[];
 }
 
 export interface Column {

@@ -14,9 +14,10 @@ type Props = {
   onAdd: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onChecklistChange: (cardId: string, checklistItemId: string, checked: boolean) => void;
 };
 
-export default function ColumnView({ column, cards, categories, onAdd, onEdit, onDelete }: Props) {
+export default function ColumnView({ column, cards, categories, onAdd, onEdit, onDelete, onChecklistChange }: Props) {
   const { setNodeRef } = useDroppable({ id: `column:${column.id}:drop` });
   const itemIds = useMemo(() => cards.map((c) => `card:${column.id}:${c.id}`), [cards, column.id]);
 
@@ -31,7 +32,7 @@ export default function ColumnView({ column, cards, categories, onAdd, onEdit, o
       <div ref={setNodeRef} className="min-h-32 space-y-2 rounded-xl px-1 pb-6 pt-2">
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <CardItem key={card.id} columnId={column.id} card={card} categories={categories} onEdit={() => onEdit(card.id)} onDelete={() => onDelete(card.id)} />
+            <CardItem key={card.id} columnId={column.id} card={card} categories={categories} onEdit={() => onEdit(card.id)} onDelete={() => onDelete(card.id)} onChecklistChange={(checklistItemId, checked) => onChecklistChange(card.id, checklistItemId, checked)} />
           ))}
         </SortableContext>
       </div>

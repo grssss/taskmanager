@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, Category, Priority } from "@/lib/types";
+import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
 import { Plus, Trash2, X } from "lucide-react";
 
 type Props = {
@@ -20,6 +20,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   const [dueDate, setDueDate] = useState<string | undefined>(card?.dueDate);
   const [priority, setPriority] = useState<Priority>(card?.priority ?? "medium");
   const [links, setLinks] = useState(card?.links ?? []);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist ?? []);
 
   useEffect(() => {
     setTitle(card?.title ?? "");
@@ -28,6 +29,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     setDueDate(card?.dueDate);
     setPriority(card?.priority ?? "medium");
     setLinks(card?.links ?? []);
+    setChecklist(card?.checklist ?? []);
   }, [card, open]);
 
   const valid = title.trim().length > 0;
@@ -106,6 +108,21 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           </div>
         </div>
 
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Checklist</label>
+            <button onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
+          </div>
+          <div className="space-y-2">
+            {checklist.map((item, i) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <input placeholder="Checklist item" value={item.text} onChange={(e) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))} className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
+                <button onClick={() => setChecklist((arr) => arr.filter((_, idx) => idx !== i))} className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove checklist item"><Trash2 size={16} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
           <button
@@ -119,6 +136,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 dueDate,
                 priority,
                 links: links.filter((l) => l.url),
+                checklist: checklist.filter((item) => item.text.trim()),
               })
             }
             className="rounded-full bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
