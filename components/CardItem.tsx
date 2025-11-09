@@ -98,7 +98,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PRIORITY_STYLES[card.priority].className}`}>
               {PRIORITY_STYLES[card.priority].label}
             </span>
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">Created {createdAgo}</span>
+            <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300">Created {createdAgo}</span>
             {due ? (
               <span className={`rounded-full px-2 py-0.5 text-[10px] ${overdue ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
                 {due.toLocaleDateString()}
@@ -113,7 +113,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
                 event.stopPropagation();
                 onDelete?.();
               }}
-              className="rounded-md p-1 hover:bg-zinc-100 text-red-600 dark:hover:bg-zinc-800"
+              className="rounded-md p-1 hover:bg-zinc-800 text-red-600"
               aria-label="Delete"
             >
               <Trash2 size={16} />
@@ -124,7 +124,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
       {card.links && card.links.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {card.links.map((l, i) => (
-            <Link key={i} href={l.url} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 max-w-full">
+            <Link key={i} href={l.url} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700 max-w-full">
               <LinkIcon size={12} className="shrink-0" /> <span className="truncate">{l.label || l.url}</span>
             </Link>
           ))}
@@ -139,7 +139,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 max-w-full"
+              className="inline-flex items-center gap-1 rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-700 max-w-full"
             >
               <span className="shrink-0">{getFileIcon(file.type)}</span>
               <span className="truncate">{file.name}</span>
@@ -171,7 +171,7 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
         event.stopPropagation();
         onEdit();
       }}
-      className={`group rounded-xl border border-black/10 bg-white p-3 shadow-sm transition-all hover:bg-zinc-50 dark:bg-zinc-950 dark:border-white/10 dark:hover:bg-zinc-900/80 ${
+      className={`group rounded-xl border border-white/10 bg-zinc-950 p-3 shadow-sm transition-all hover:bg-zinc-900 ${
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
@@ -187,7 +187,7 @@ type CardPreviewProps = {
 
 export function CardPreview({ card, categories }: CardPreviewProps) {
   return (
-    <article className="pointer-events-none w-full max-w-[360px] rounded-xl border border-black/10 bg-white p-3 shadow-lg dark:bg-zinc-950 dark:border-white/10">
+    <article className="pointer-events-none w-full max-w-[360px] rounded-xl border border-white/10 bg-zinc-950 p-3 shadow-lg">
       <CardBody card={card} categories={categories} showActions={false} />
     </article>
   );

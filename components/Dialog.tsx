@@ -89,9 +89,9 @@ export default function Dialog({
             : 'scale-95 opacity-0 translate-y-4'
         }`}
       >
-        <div className="relative rounded-2xl border border-black/10 bg-white p-6 shadow-2xl dark:bg-zinc-900 dark:border-white/10 dark:shadow-black/50">
+        <div className="relative rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl shadow-black/50">
           {/* Subtle gradient overlay for depth */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none dark:from-white/5" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
           <div className="relative">
             <div className="mb-4 flex items-center justify-between">
@@ -100,7 +100,7 @@ export default function Dialog({
               </h3>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100 text-zinc-400"
                 aria-label="Close"
               >
                 <X size={20} />
