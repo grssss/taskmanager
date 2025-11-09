@@ -12,6 +12,15 @@ export interface ChecklistItem {
   checked: boolean;
 }
 
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string; // MIME type
+  url: string;
+  uploadedAt: string;
+}
+
 export interface Card {
   id: string;
   title: string;
@@ -23,6 +32,7 @@ export interface Card {
   links?: LinkItem[];
   status?: string;
   checklist?: ChecklistItem[];
+  files?: FileAttachment[];
 }
 
 export interface Column {

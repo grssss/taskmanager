@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
-import { Plus, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Card, Category, Priority, ChecklistItem, FileAttachment } from "@/lib/types";
+import { Plus, Trash2, X, ChevronDown, ChevronUp, Upload, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { uploadFile, deleteFile } from "@/lib/supabase";
+import { useAuth } from "@/lib/AuthContext";
 
 type Props = {
   open: boolean;
@@ -16,6 +18,7 @@ type Props = {
 };
 
 export default function UpsertCardModal({ open, card, categories, onSave, onClose }: Props) {
+  const { user } = useAuth();
   const [title, setTitle] = useState(card?.title ?? "");
   const fallbackCategory = card && (card as any).categoryId ? [(card as any).categoryId as string] : [];
   const [description, setDescription] = useState(card?.description ?? "");
@@ -26,6 +29,9 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   const [status, setStatus] = useState(card?.status ?? "");
   const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist ?? []);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [files, setFiles] = useState<FileAttachment[]>(card?.files ?? []);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -56,9 +62,112 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     setStatus(card?.status ?? "");
     setChecklist(card?.checklist ?? []);
     setDescriptionExpanded(false);
+    setFiles(card?.files ?? []);
+    setUploadError(null);
   }, [card, open]);
 
   const valid = title.trim().length > 0;
+
+  // File validation constants
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILES = 10;
+  const ALLOWED_FILE_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'application/rtf',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+  ];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || !user) return;
+
+    setUploadError(null);
+
+    // Validate file count
+    if (files.length + selectedFiles.length > MAX_FILES) {
+      setUploadError(`Maximum ${MAX_FILES} files allowed per card`);
+      return;
+    }
+
+    const cardId = card?.id ?? crypto.randomUUID();
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+
+      // Validate file type
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        setUploadError(`File type not allowed: ${file.name}`);
+        continue;
+      }
+
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        setUploadError(`File too large (max 5MB): ${file.name}`);
+        continue;
+      }
+
+      setUploading(true);
+
+      try {
+        const result = await uploadFile(user.id, cardId, file);
+
+        if ('error' in result) {
+          setUploadError(result.error);
+        } else {
+          const newFile: FileAttachment = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: result.url,
+            uploadedAt: new Date().toISOString(),
+          };
+          setFiles((prev) => [...prev, newFile]);
+        }
+      } catch (err) {
+        setUploadError(`Failed to upload ${file.name}`);
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleFileDelete = async (fileToDelete: FileAttachment) => {
+    // Extract path from URL (everything after the bucket name)
+    const urlParts = fileToDelete.url.split('/');
+    const bucketIndex = urlParts.indexOf('card-attachments');
+    if (bucketIndex !== -1) {
+      const filePath = urlParts.slice(bucketIndex + 1).join('/');
+      await deleteFile(filePath);
+    }
+    setFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <ImageIcon size={16} />;
+    if (type === 'application/pdf') return <FileText size={16} />;
+    return <FileIcon size={16} />;
+  };
 
   return (
     <Dialog open={open} onClose={onClose} title={card ? "Edit Task" : "New Task"}>
@@ -196,6 +305,65 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           </div>
         </div>
 
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs text-zinc-600 dark:text-zinc-400">
+              Files ({files.length}/{MAX_FILES})
+            </label>
+            <label className="cursor-pointer p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+              <input
+                type="file"
+                multiple
+                accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,.csv"
+                onChange={handleFileUpload}
+                disabled={uploading || files.length >= MAX_FILES}
+                className="hidden"
+              />
+              <Upload size={18} />
+            </label>
+          </div>
+          {uploadError && (
+            <div className="mb-2 rounded-md bg-red-100 px-3 py-2 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+              {uploadError}
+            </div>
+          )}
+          {uploading && (
+            <div className="mb-2 rounded-md bg-blue-100 px-3 py-2 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+              Uploading...
+            </div>
+          )}
+          <div className="space-y-1.5">
+            {files.map((file) => (
+              <div key={file.id} className="flex items-center gap-2 rounded-md bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
+                <div className="text-zinc-600 dark:text-zinc-400">
+                  {getFileIcon(file.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-sm text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400"
+                  >
+                    {file.name}
+                  </a>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {formatFileSize(file.size)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleFileDelete(file)}
+                  className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
+                  aria-label="Remove file"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
           <button
@@ -211,6 +379,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 links: links.filter((l) => l.url),
                 status,
                 checklist: checklist.filter((item) => item.text.trim()),
+                files,
               })
             }
             className="rounded-full bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
