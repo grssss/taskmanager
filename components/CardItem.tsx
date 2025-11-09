@@ -30,6 +30,7 @@ type Props = {
   columnId: string;
   card: Card;
   categories: Category[];
+  status: string;
   onEdit: () => void;
   onDelete: () => void;
 };
@@ -37,11 +38,12 @@ type Props = {
 type CardBodyProps = {
   card: Card;
   categories: Category[];
+  status?: string;
   onDelete?: () => void;
   showActions?: boolean;
 };
 
-function CardBody({ card, categories, onDelete, showActions = true }: CardBodyProps) {
+function CardBody({ card, categories, status, onDelete, showActions = true }: CardBodyProps) {
   const cardCategories = categories.filter((c) => card.categoryIds?.includes(c.id));
   const cardCreatedDate = new Date(card.createdAt);
 
@@ -83,6 +85,11 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PRIORITY_STYLES[card.priority].className}`}>
               {PRIORITY_STYLES[card.priority].label}
             </span>
+            {status ? (
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                {status}
+              </span>
+            ) : null}
             <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">Created {createdAgo}</span>
             {due ? (
               <span className={`rounded-full px-2 py-0.5 text-[10px] ${overdue ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
@@ -119,7 +126,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
   );
 }
 
-export default function CardItem({ columnId, card, categories, onEdit, onDelete }: Props) {
+export default function CardItem({ columnId, card, categories, status, onEdit, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `card:${columnId}:${card.id}` });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -142,7 +149,7 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete 
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
-      <CardBody card={card} categories={categories} onDelete={onDelete} />
+      <CardBody card={card} categories={categories} status={status} onDelete={onDelete} />
     </article>
   );
 }
