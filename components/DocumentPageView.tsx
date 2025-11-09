@@ -191,7 +191,7 @@ export default function DocumentPageView({
         ) : (
           <h1
             onClick={() => setIsEditingTitle(true)}
-            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100"
+            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-800 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100"
           >
             {page.title}
           </h1>

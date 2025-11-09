@@ -39,6 +39,7 @@ export default function EditableBlock({
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
   const [todoChecked, setTodoChecked] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
 
@@ -359,12 +360,16 @@ export default function EditableBlock({
       case "code":
         return "Code";
       default:
-        return "Type '/' for commands";
+        return isHovered ? "Type '/' for commands" : "";
     }
   };
 
   return (
-    <div className="relative group">
+    <div
+      className="relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Drag handle - shown on hover */}
       <div className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
         <GripVertical size={16} className="text-zinc-400" />
