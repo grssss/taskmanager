@@ -21,12 +21,14 @@ export async function POST(request: Request) {
     const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
     // Update the user's data
+    const updateData: Database['public']['Tables']['user_data']['Update'] = {
+      app_state: appState,
+      updated_at: new Date().toISOString(),
+    }
+
     const { error } = await supabase
       .from('user_data')
-      .update({
-        app_state: appState,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('user_id', userId)
 
     if (error) {
