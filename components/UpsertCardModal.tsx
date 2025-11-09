@@ -8,6 +8,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { uploadFile, deleteFile } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
+import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut";
 
 type Props = {
   open: boolean;
@@ -67,6 +68,43 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   }, [card, open]);
 
   const valid = title.trim().length > 0;
+
+  const handleSave = () => {
+    if (!valid) return;
+    onSave({
+      id: card?.id,
+      title,
+      description,
+      categoryIds,
+      dueDate,
+      priority,
+      links: links.filter((l) => l.url),
+      status,
+      checklist: checklist.filter((item) => item.text.trim()),
+      files,
+    });
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      key: 'Enter',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 's',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 'Escape',
+      onKeyDown: onClose,
+      enabled: open,
+    },
+  ]);
 
   // File validation constants
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -368,20 +406,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
           <button
             disabled={!valid}
-            onClick={() =>
-              onSave({
-                id: card?.id,
-                title,
-                description,
-                categoryIds,
-                dueDate,
-                priority,
-                links: links.filter((l) => l.url),
-                status,
-                checklist: checklist.filter((item) => item.text.trim()),
-                files,
-              })
-            }
+            onClick={handleSave}
             className="rounded-full bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
           >
             Save

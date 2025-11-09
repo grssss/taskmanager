@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Column } from "@/lib/types";
 import { ArrowDownAZ, ArrowUpZA, Plus, X } from "lucide-react";
+import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut";
 
 type Props = {
   open: boolean;
@@ -17,6 +18,32 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
     if (!open) return;
     setLocal(columns);
   }, [columns, open]);
+
+  const handleSave = () => {
+    onSave(local.map((c) => ({ ...c, id: slug(c.name) })));
+    onClose();
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      key: 'Enter',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 's',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 'Escape',
+      onKeyDown: onClose,
+      enabled: open,
+    },
+  ]);
 
   const add = () => setLocal((l) => [...l, { id: slug(`Column ${l.length + 1}`), name: `Column ${l.length + 1}`, cardIds: [] }]);
   const remove = (id: string) => setLocal((l) => l.filter((c) => c.id !== id));
@@ -45,7 +72,7 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
           <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"><Plus size={16} /> Add Column</button>
           <div className="space-x-2">
             <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
-            <button onClick={() => { onSave(local.map((c) => ({ ...c, id: slug(c.name) }))); onClose(); }} className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black">Save</button>
+            <button onClick={handleSave} className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black">Save</button>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Category } from "@/lib/types";
 import { HexColorPicker } from "react-colorful";
 import { Plus, X } from "lucide-react";
+import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut";
 
 type Props = {
   open: boolean;
@@ -20,6 +21,32 @@ export default function ManageCategoriesModal({ open, categories, onSave, onClos
     setLocal(categories);
     setPickerFor(null);
   }, [categories, open]);
+
+  const handleSave = () => {
+    onSave(assignFallbacks(local));
+    onClose();
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      key: 'Enter',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 's',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 'Escape',
+      onKeyDown: onClose,
+      enabled: open,
+    },
+  ]);
 
   const add = () =>
     setLocal((existing) => {
@@ -54,10 +81,7 @@ export default function ManageCategoriesModal({ open, categories, onSave, onClos
           <div className="space-x-2">
             <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
             <button
-              onClick={() => {
-                onSave(assignFallbacks(local));
-                onClose();
-              }}
+              onClick={handleSave}
               className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"
             >
               Save

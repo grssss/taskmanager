@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Project } from "@/lib/types";
 import { GripVertical, X } from "lucide-react";
+import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut";
 
 type Props = {
   open: boolean;
@@ -151,6 +152,27 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
     onSave(validProjects, newActiveId);
     onClose();
   };
+
+  // Keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      key: 'Enter',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 's',
+      ctrl: true,
+      onKeyDown: handleSave,
+      enabled: open,
+    },
+    {
+      key: 'Escape',
+      onKeyDown: onClose,
+      enabled: open,
+    },
+  ]);
 
   return (
     <Dialog open={open} onClose={onClose} title="Manage Projects">

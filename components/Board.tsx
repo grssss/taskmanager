@@ -32,6 +32,8 @@ import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import ManageProjectsModal from "@/components/ManageProjectsModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
 import { CardPreview } from "@/components/CardItem";
+import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut";
+import KeyboardShortcutsHelp from "@/components/KeyboardShortcutsHelp";
 
 const DEFAULT_PROJECT_NAME = "Personal";
 const DEFAULT_MIGRATED_PROJECT_ID = "project-default";
@@ -114,6 +116,7 @@ export default function Board() {
   const [showColumns, setShowColumns] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [editingCard, setEditingCard] = useState<null | { id?: string; columnId?: string }>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
@@ -187,6 +190,57 @@ export default function Board() {
     duration: 220,
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   };
+
+  // Global keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      ctrl: true,
+      key: 'n',
+      onKeyDown: () => {
+        // Create new task in first column
+        if (board.columns.length > 0) {
+          handleCreate(board.columns[0].id);
+        }
+      },
+    },
+    {
+      ctrl: true,
+      shift: true,
+      key: 'n',
+      onKeyDown: () => {
+        handleAddProject();
+      },
+    },
+    {
+      ctrl: true,
+      key: 'k',
+      onKeyDown: () => {
+        setShowCategories(true);
+      },
+    },
+    {
+      ctrl: true,
+      shift: true,
+      key: 'k',
+      onKeyDown: () => {
+        setShowColumns(true);
+      },
+    },
+    {
+      ctrl: true,
+      key: 'p',
+      onKeyDown: () => {
+        setShowProjects(true);
+      },
+    },
+    {
+      ctrl: true,
+      key: '/',
+      onKeyDown: () => {
+        setShowShortcutsHelp(true);
+      },
+    },
+  ]);
 
   const updateActiveBoard = (updater: (current: BoardState) => BoardState) => {
     setStoredState((prev) => {
@@ -576,6 +630,11 @@ export default function Board() {
         projects={appState.projects}
         activeProjectId={appState.activeProjectId}
         onSave={saveProjects}
+      />
+
+      <KeyboardShortcutsHelp
+        open={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
       />
     </div>
   );
