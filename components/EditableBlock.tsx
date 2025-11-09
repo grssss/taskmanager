@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from "react";
 import { ContentBlock, ContentBlockType } from "@/lib/types";
 import { Check, GripVertical } from "lucide-react";
+import SlashCommandMenu from "./SlashCommandMenu";
 
 interface EditableBlockProps {
   block: ContentBlock;
@@ -200,28 +201,6 @@ export default function EditableBlock({
     setSlashMenuQuery("");
   };
 
-  // Slash menu items
-  const slashMenuItems = [
-    { type: "paragraph" as ContentBlockType, label: "Text", description: "Plain text paragraph", icon: "¶" },
-    { type: "heading1" as ContentBlockType, label: "Heading 1", description: "Large section heading", icon: "H1" },
-    { type: "heading2" as ContentBlockType, label: "Heading 2", description: "Medium section heading", icon: "H2" },
-    { type: "heading3" as ContentBlockType, label: "Heading 3", description: "Small section heading", icon: "H3" },
-    { type: "bulletList" as ContentBlockType, label: "Bullet List", description: "Bulleted list item", icon: "•" },
-    { type: "numberedList" as ContentBlockType, label: "Numbered List", description: "Numbered list item", icon: "1." },
-    { type: "todoList" as ContentBlockType, label: "Todo List", description: "Checkbox list item", icon: "☐" },
-    { type: "quote" as ContentBlockType, label: "Quote", description: "Blockquote", icon: "\"" },
-    { type: "code" as ContentBlockType, label: "Code", description: "Code block", icon: "</>" },
-    { type: "divider" as ContentBlockType, label: "Divider", description: "Horizontal line", icon: "―" },
-  ];
-
-  const filteredSlashItems = slashMenuQuery
-    ? slashMenuItems.filter(
-        (item) =>
-          item.label.toLowerCase().includes(slashMenuQuery) ||
-          item.type.toLowerCase().includes(slashMenuQuery)
-      )
-    : slashMenuItems;
-
   // Render block based on type
   const renderBlockContent = () => {
     const baseClasses = "outline-none focus:outline-none w-full";
@@ -334,6 +313,224 @@ export default function EditableBlock({
           </div>
         );
 
+      case "toggleList":
+        return (
+          <div className="mb-1">
+            <div className="flex items-start gap-2">
+              <button
+                onClick={() => {
+                  // Toggle state would be stored in metadata
+                }}
+                className="mt-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                ▶
+              </button>
+              <div {...commonProps} className={`${commonProps.className} flex-1 font-medium`} />
+            </div>
+          </div>
+        );
+
+      case "callout":
+        return (
+          <div className="my-2 bg-blue-500/10 border-l-4 border-blue-500 rounded-r-lg p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-blue-500 text-xl mt-0.5">💡</span>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} flex-1 text-blue-100`}
+              />
+            </div>
+          </div>
+        );
+
+      case "table":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden">
+            <div className="p-4 text-center text-zinc-500">
+              <div className="text-sm mb-2">📊 Table Block</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+              />
+            </div>
+          </div>
+        );
+
+      case "database":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50">
+            <div className="p-4 text-center text-zinc-500">
+              <div className="text-sm mb-2">🗄️ Database Block</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+              />
+            </div>
+          </div>
+        );
+
+      case "kanban":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50">
+            <div className="p-4 text-center text-zinc-500">
+              <div className="text-sm mb-2">📋 Kanban Board</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+              />
+            </div>
+          </div>
+        );
+
+      case "image":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-center text-zinc-500 mb-2">
+              <div className="text-sm mb-2">🖼️ Image</div>
+              <button className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs transition-colors">
+                Upload Image
+              </button>
+            </div>
+            <div
+              {...commonProps}
+              className={`${commonProps.className} text-xs text-center`}
+            />
+          </div>
+        );
+
+      case "file":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-center text-zinc-500 mb-2">
+              <div className="text-sm mb-2">📎 File Attachment</div>
+              <button className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs transition-colors">
+                Upload File
+              </button>
+            </div>
+            <div
+              {...commonProps}
+              className={`${commonProps.className} text-xs text-center`}
+            />
+          </div>
+        );
+
+      case "video":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-center text-zinc-500">
+              <div className="text-sm mb-2">🎥 Video</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+                data-placeholder="Paste YouTube/Vimeo URL or upload video..."
+              />
+            </div>
+          </div>
+        );
+
+      case "audio":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-center text-zinc-500">
+              <div className="text-sm mb-2">🎵 Audio</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+                data-placeholder="Paste audio URL or upload file..."
+              />
+            </div>
+          </div>
+        );
+
+      case "bookmark":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-zinc-500">
+              <div className="text-sm mb-2">🔖 Bookmark</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+                data-placeholder="Paste a URL to create a link preview..."
+              />
+            </div>
+          </div>
+        );
+
+      case "embed":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-zinc-500">
+              <div className="text-sm mb-2">🌐 Embed</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+                data-placeholder="Paste embed URL or code..."
+              />
+            </div>
+          </div>
+        );
+
+      case "date":
+        return (
+          <div className="mb-1 inline-block">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg">
+              <span className="text-zinc-400">📅</span>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-sm`}
+                data-placeholder="Add a date..."
+              />
+            </div>
+          </div>
+        );
+
+      case "tag":
+        return (
+          <div className="mb-1 inline-block">
+            <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
+              <span className="text-purple-400">🏷️</span>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-sm text-purple-300`}
+                data-placeholder="Tag name..."
+              />
+            </div>
+          </div>
+        );
+
+      case "progressBar":
+        return (
+          <div className="my-2">
+            <div className="mb-2">
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-sm mb-1`}
+                data-placeholder="Progress label..."
+              />
+            </div>
+            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{ width: "50%" }}
+              />
+            </div>
+            <div className="text-xs text-zinc-500 mt-1 text-right">50%</div>
+          </div>
+        );
+
+      case "calendar":
+        return (
+          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50 p-4">
+            <div className="text-center text-zinc-500">
+              <div className="text-sm mb-2">📆 Calendar View</div>
+              <div
+                {...commonProps}
+                className={`${commonProps.className} text-xs`}
+              />
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div {...commonProps} className={`${commonProps.className} mb-1`} />
@@ -379,26 +576,15 @@ export default function EditableBlock({
       {renderBlockContent()}
 
       {/* Slash command menu */}
-      {showSlashMenu && filteredSlashItems.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl min-w-[280px] max-h-[300px] overflow-y-auto">
-          {filteredSlashItems.map((item) => (
-            <button
-              key={item.type}
-              onClick={() => handleSlashCommand(item.type)}
-              className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-zinc-700 transition-colors"
-            >
-              <span className="text-lg leading-none mt-0.5">{item.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-zinc-100">
-                  {item.label}
-                </div>
-                <div className="text-xs text-zinc-400">
-                  {item.description}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+      {showSlashMenu && (
+        <SlashCommandMenu
+          query={slashMenuQuery}
+          onSelect={handleSlashCommand}
+          onClose={() => {
+            setShowSlashMenu(false);
+            setSlashMenuQuery("");
+          }}
+        />
       )}
     </div>
   );

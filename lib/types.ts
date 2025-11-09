@@ -101,19 +101,37 @@ export const defaultAppState = (): AppState => {
 
 // Content block types for document pages
 export type ContentBlockType =
+  // Core text blocks
   | "paragraph"
   | "heading1"
   | "heading2"
   | "heading3"
+  // Lists
   | "bulletList"
   | "numberedList"
   | "todoList"
+  | "toggleList"
+  // Text formatting
   | "quote"
+  | "callout"
   | "divider"
   | "code"
+  // Structured content
   | "table"
+  | "database"
+  // Media & embeds
   | "image"
-  | "file";
+  | "file"
+  | "video"
+  | "audio"
+  | "bookmark"
+  | "embed"
+  // Productivity
+  | "date"
+  | "tag"
+  | "progressBar"
+  | "kanban"
+  | "calendar";
 
 export interface ContentBlock {
   id: string;
