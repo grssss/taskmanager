@@ -28,6 +28,15 @@ export async function uploadFile(
   const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
   const filePath = `${userId}/${cardId}/${timestamp}_${sanitizedFileName}`
 
+  console.log('[Upload] Starting upload:', {
+    bucket: BUCKET_NAME,
+    filePath,
+    fileName: file.name,
+    fileSize: file.size,
+    userId,
+    cardId,
+  })
+
   const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, file, {
@@ -36,12 +45,22 @@ export async function uploadFile(
     })
 
   if (error) {
+    console.error('[Upload] Error:', {
+      message: error.message,
+      error: error,
+      bucket: BUCKET_NAME,
+      filePath,
+    })
     return { error: error.message }
   }
+
+  console.log('[Upload] Success:', { path: data.path })
 
   const { data: urlData } = supabase.storage
     .from(BUCKET_NAME)
     .getPublicUrl(data.path)
+
+  console.log('[Upload] Public URL generated:', urlData.publicUrl)
 
   return { url: urlData.publicUrl, path: data.path }
 }
