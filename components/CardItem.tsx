@@ -63,6 +63,9 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 break-words">{card.title}</h3>
+          {card.status ? (
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 break-words">{card.status}</p>
+          ) : null}
           {card.description ? (
             <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400 break-words">{card.description}</p>
           ) : null}

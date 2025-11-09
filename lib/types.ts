@@ -3,6 +3,7 @@ export type Priority = "low" | "medium" | "high" | "critical";
 export interface LinkItem {
   label: string;
   url: string;
+  checklistItemId?: string;
 }
 
 export interface ChecklistItem {
