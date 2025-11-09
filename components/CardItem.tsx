@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { isAfter, isToday, isYesterday, differenceInDays } from "date-fns";
-import { Link as LinkIcon, Trash2 } from "lucide-react";
+import { Link as LinkIcon, Trash2, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import Link from "next/link";
 import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
 
@@ -24,6 +24,18 @@ const PRIORITY_STYLES: Record<Priority, { label: string; className: string }> = 
     label: "Critical",
     className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   },
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+const getFileIcon = (type: string) => {
+  if (type.startsWith('image/')) return <ImageIcon size={12} />;
+  if (type === 'application/pdf') return <FileText size={12} />;
+  return <FileIcon size={12} />;
 };
 
 type Props = {
@@ -115,6 +127,24 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
             <Link key={i} href={l.url} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 max-w-full">
               <LinkIcon size={12} className="shrink-0" /> <span className="truncate">{l.label || l.url}</span>
             </Link>
+          ))}
+        </div>
+      ) : null}
+      {card.files && card.files.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {card.files.map((file) => (
+            <a
+              key={file.id}
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 max-w-full"
+            >
+              <span className="shrink-0">{getFileIcon(file.type)}</span>
+              <span className="truncate">{file.name}</span>
+              <span className="shrink-0 text-[10px] text-zinc-500 dark:text-zinc-400">({formatFileSize(file.size)})</span>
+            </a>
           ))}
         </div>
       ) : null}
