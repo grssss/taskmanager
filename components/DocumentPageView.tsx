@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkspaceState, Page, ContentBlock, ContentBlockType } from "@/lib/types";
 import { updatePage } from "@/lib/pageUtils";
 import { Plus } from "lucide-react";
@@ -20,6 +20,13 @@ export default function DocumentPageView({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(page.title);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+
+  // Sync title state when page changes
+  useEffect(() => {
+    setTitle(page.title);
+    // Auto-enable editing for new "Untitled" pages
+    setIsEditingTitle(page.title === "Untitled");
+  }, [page.id, page.title]);
 
   const handleTitleSave = () => {
     if (title.trim() && title !== page.title) {
