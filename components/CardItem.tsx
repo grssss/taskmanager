@@ -51,10 +51,10 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
   return (
     <>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{card.title}</h3>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 break-words">{card.title}</h3>
           {card.description ? (
-            <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">{card.description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400 break-words">{card.description}</p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {cardCategories.map((category) => (
@@ -76,7 +76,7 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
             <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">Created {createdAgo}</span>
             {due ? (
               <span className={`rounded-full px-2 py-0.5 text-[10px] ${overdue ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"}`}>
-                Due {due.toLocaleDateString()}
+                {due.toLocaleDateString()}
               </span>
             ) : null}
           </div>
@@ -99,8 +99,8 @@ function CardBody({ card, categories, onDelete, showActions = true }: CardBodyPr
       {card.links && card.links.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {card.links.map((l, i) => (
-            <Link key={i} href={l.url} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-              <LinkIcon size={12} /> {l.label || l.url}
+            <Link key={i} href={l.url} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 max-w-full">
+              <LinkIcon size={12} className="shrink-0" /> <span className="truncate">{l.label || l.url}</span>
             </Link>
           ))}
         </div>
