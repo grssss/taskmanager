@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { formatDistanceToNow, isAfter, isToday } from "date-fns";
+import { isAfter, isToday, isYesterday, differenceInDays } from "date-fns";
 import { Link as LinkIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Card, Category, Priority } from "@/lib/types";
@@ -44,7 +44,17 @@ type CardBodyProps = {
 function CardBody({ card, categories, onDelete, showActions = true }: CardBodyProps) {
   const cardCategories = categories.filter((c) => card.categoryIds?.includes(c.id));
   const cardCreatedDate = new Date(card.createdAt);
-  const createdAgo = isToday(cardCreatedDate) ? "today" : formatDistanceToNow(cardCreatedDate, { addSuffix: true });
+
+  let createdAgo: string;
+  if (isToday(cardCreatedDate)) {
+    createdAgo = "today";
+  } else if (isYesterday(cardCreatedDate)) {
+    createdAgo = "yesterday";
+  } else {
+    const daysAgo = differenceInDays(new Date(), cardCreatedDate);
+    createdAgo = `${daysAgo} days ago`;
+  }
+
   const due = card.dueDate ? new Date(card.dueDate) : undefined;
   const overdue = due ? isAfter(new Date(), due) : false;
 
