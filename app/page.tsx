@@ -6,6 +6,11 @@ import UserProfile from "@/components/UserProfile";
 import Sidebar from "@/components/Sidebar";
 import PageCanvas from "@/components/PageCanvas";
 import WorkspaceDebugPanel from "@/components/WorkspaceDebugPanel";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import MobileTopBar from "@/components/MobileTopBar";
+import MobileHome from "@/components/MobileHome";
+import MobileSearch from "@/components/MobileSearch";
+import MobileNewPage from "@/components/MobileNewPage";
 import { useAuth } from "@/lib/AuthContext";
 import { useWorkspaceStorage } from "@/lib/useWorkspaceStorage";
 import { getRootPages } from "@/lib/types";
@@ -17,6 +22,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [mobileView, setMobileView] = useState<'home' | 'search' | 'new' | 'page'>('home');
 
   // Ensure client-side rendering
   useEffect(() => {
@@ -94,7 +100,17 @@ export default function Home() {
     // Close mobile menu when selecting a page
     if (isMobile) {
       setMobileMenuOpen(false);
+      setMobileView('page');
     }
+  };
+
+  const handleWorkspaceChange = (workspaceId: string) => {
+    const rootPages = getRootPages(workspaceState.pages, workspaceId);
+    setWorkspaceState({
+      ...workspaceState,
+      activeWorkspaceId: workspaceId,
+      activePageId: rootPages[0]?.id,
+    });
   };
 
   const handleFixData = () => {
@@ -122,35 +138,88 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <UserProfile />
+      {/* Desktop: Show UserProfile in top-left */}
+      {!isMobile && <UserProfile />}
 
-      {/* Mobile hamburger menu button */}
-      {isClient && isMobile && !mobileMenuOpen && (
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="fixed bottom-4 left-4 z-30 p-3 bg-zinc-800 rounded-lg shadow-lg hover:bg-zinc-700 transition-colors md:hidden"
-          title="Open menu"
-        >
-          <Menu size={24} className="text-zinc-100" />
-        </button>
+      {/* Mobile: Show Notion-style top bar */}
+      {isClient && isMobile && (
+        <MobileTopBar
+          workspaceState={workspaceState}
+          onWorkspaceChange={handleWorkspaceChange}
+        />
       )}
 
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          workspaceState={workspaceState}
-          onStateChange={setWorkspaceState}
-          onPageSelect={handlePageSelect}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-        <PageCanvas
-          workspaceState={workspaceState}
-          onStateChange={setWorkspaceState}
-          onPageSelect={handlePageSelect}
-        />
+        {/* Desktop: Always show sidebar */}
+        {!isMobile && (
+          <Sidebar
+            workspaceState={workspaceState}
+            onStateChange={setWorkspaceState}
+            onPageSelect={handlePageSelect}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            mobileOpen={false}
+            onMobileClose={() => {}}
+          />
+        )}
+
+        {/* Mobile: Show different views based on mobileView state */}
+        {isClient && isMobile ? (
+          <div className="flex-1 flex flex-col pt-14">
+            {mobileView === 'home' && (
+              <MobileHome
+                workspaceState={workspaceState}
+                onPageSelect={handlePageSelect}
+              />
+            )}
+            {mobileView === 'search' && (
+              <MobileSearch
+                workspaceState={workspaceState}
+                onPageSelect={handlePageSelect}
+                onClose={() => setMobileView('home')}
+              />
+            )}
+            {mobileView === 'new' && (
+              <MobileNewPage
+                workspaceState={workspaceState}
+                onStateChange={setWorkspaceState}
+                onPageSelect={handlePageSelect}
+                onClose={() => setMobileView('home')}
+              />
+            )}
+            {mobileView === 'page' && (
+              <PageCanvas
+                workspaceState={workspaceState}
+                onStateChange={setWorkspaceState}
+                onPageSelect={handlePageSelect}
+                onBackClick={() => setMobileView('home')}
+              />
+            )}
+          </div>
+        ) : (
+          /* Desktop: Show PageCanvas */
+          <PageCanvas
+            workspaceState={workspaceState}
+            onStateChange={setWorkspaceState}
+            onPageSelect={handlePageSelect}
+          />
+        )}
       </div>
+
+      {/* Mobile: Bottom navigation */}
+      {isClient && isMobile && (
+        <MobileBottomNav
+          onPagesClick={() => setMobileView('home')}
+          onSearchClick={() => setMobileView('search')}
+          onNewPageClick={() => setMobileView('new')}
+          activeTab={
+            mobileView === 'home' ? 'pages' :
+            mobileView === 'search' ? 'search' :
+            mobileView === 'new' ? 'new' :
+            undefined
+          }
+        />
+      )}
 
       {/* Migration notice */}
       {syncStatus.migrated && (
@@ -159,16 +228,16 @@ export default function Home() {
         </div>
       )}
 
-      {/* Debug Panel - Only show for specific account */}
-      {user.email === 'temppookerrr2@gmail.com' && (
+      {/* Debug Panel - Only show for specific account and not on mobile */}
+      {!isMobile && user.email === 'temppookerrr2@gmail.com' && (
         <WorkspaceDebugPanel
           workspaceState={workspaceState}
           onFix={handleFixData}
         />
       )}
 
-      {/* Warning if no pages in sidebar */}
-      {hasNoPagesInSidebar && (
+      {/* Warning if no pages in sidebar - Only on desktop */}
+      {!isMobile && hasNoPagesInSidebar && (
         <div className="fixed top-20 right-4 bg-orange-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
           <div className="font-bold">⚠️ Projects Not Showing</div>
           <div className="text-sm mt-1">
