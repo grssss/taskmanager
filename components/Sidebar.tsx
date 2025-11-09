@@ -48,10 +48,21 @@ export default function Sidebar({
     x: number;
     y: number;
   } | null>(null);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
   );
+
+  const handleSwitchWorkspace = (workspaceId: string) => {
+    const rootPages = getRootPages(workspaceState.pages, workspaceId);
+    onStateChange({
+      ...workspaceState,
+      activeWorkspaceId: workspaceId,
+      activePageId: rootPages[0]?.id,
+    });
+    setShowWorkspaceMenu(false);
+  };
 
   if (collapsed) {
     return (
@@ -133,9 +144,15 @@ export default function Sidebar({
         {/* Header */}
         <div className="p-4 border-b border-black/10 dark:border-white/10">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm truncate flex-1">
-              {activeWorkspace?.icon} {activeWorkspace?.name}
-            </h2>
+            <button
+              onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
+              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
+            >
+              <span className="truncate">
+                {activeWorkspace?.icon} {activeWorkspace?.name}
+              </span>
+              <ChevronDown size={14} className={`shrink-0 transition-transform ${showWorkspaceMenu ? 'rotate-180' : ''}`} />
+            </button>
             <button
               onClick={onToggleCollapse}
               className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
@@ -159,6 +176,26 @@ export default function Sidebar({
               className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
             />
           </div>
+
+          {/* Workspace selector dropdown */}
+          {showWorkspaceMenu && (
+            <div className="mt-2 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-lg overflow-hidden">
+              {workspaceState.workspaces.map((workspace) => (
+                <button
+                  key={workspace.id}
+                  onClick={() => handleSwitchWorkspace(workspace.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                    workspace.id === workspaceState.activeWorkspaceId
+                      ? "bg-zinc-100 dark:bg-zinc-700"
+                      : "hover:bg-zinc-50 dark:hover:bg-zinc-750"
+                  }`}
+                >
+                  <span>{workspace.icon}</span>
+                  <span className="truncate">{workspace.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pages list */}
@@ -196,7 +233,7 @@ export default function Sidebar({
         <div className="p-4 border-t border-black/10 dark:border-white/10">
           <button
             onClick={() => handleCreatePage()}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-black text-white dark:bg-zinc-700 dark:text-zinc-200 hover:opacity-90 transition-opacity"
           >
             <Plus size={16} />
             New Page
@@ -289,7 +326,7 @@ function PageTreeItem({
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
-            ? "bg-black text-white dark:bg-white dark:text-black"
+            ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
             : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
         }`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
