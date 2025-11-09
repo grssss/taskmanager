@@ -24,7 +24,8 @@ export default function DocumentPageView({
   // Sync title state when page changes
   useEffect(() => {
     setTitle(page.title);
-    setIsEditingTitle(false);
+    // Auto-enable editing for new "Untitled" pages
+    setIsEditingTitle(page.title === "Untitled");
   }, [page.id, page.title]);
 
   const handleTitleSave = () => {
