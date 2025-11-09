@@ -90,7 +90,7 @@ export default function Sidebar({
     setShowWorkspaceMenu(false);
   };
 
-  // On mobile, hide sidebar when collapsed
+  // On desktop, show collapsed sidebar
   if (collapsed && !isMobile) {
     return (
       <div className="w-12 bg-zinc-900 border-r border-white/10 flex flex-col items-center py-4">
@@ -105,10 +105,8 @@ export default function Sidebar({
     );
   }
 
-  // On mobile, don't render anything when collapsed (hamburger menu will be in header)
-  if (collapsed && isMobile) {
-    return null;
-  }
+  // On mobile, always render the sidebar (visibility controlled by mobileOpen prop)
+  // Don't return null here - we need the sidebar to slide in/out
 
   const handleCreatePage = (type: "document" | "database", parentPageId?: string) => {
     const newPage = createPage(

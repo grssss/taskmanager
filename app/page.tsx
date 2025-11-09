@@ -28,7 +28,8 @@ export default function Home() {
     if (!isClient) return;
     const checkMobile = () => {
       if (typeof window === 'undefined') return;
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -127,7 +128,7 @@ export default function Home() {
       {isClient && isMobile && !mobileMenuOpen && (
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="fixed top-4 left-4 z-30 p-2 bg-zinc-800 rounded-lg shadow-lg hover:bg-zinc-700 transition-colors md:hidden"
+          className="fixed bottom-4 left-4 z-30 p-3 bg-zinc-800 rounded-lg shadow-lg hover:bg-zinc-700 transition-colors md:hidden"
           title="Open menu"
         >
           <Menu size={24} className="text-zinc-100" />
