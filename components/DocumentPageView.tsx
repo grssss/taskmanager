@@ -183,6 +183,7 @@ export default function DocumentPageView({
                 setIsEditingTitle(false);
               }
             }}
+            onFocus={(e) => e.target.select()}
             autoFocus
             className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-100 placeholder-zinc-400"
             placeholder="Untitled"
