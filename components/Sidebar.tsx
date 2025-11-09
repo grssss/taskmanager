@@ -535,8 +535,8 @@ function PageTreeItem({
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
-            ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
-            : "hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+            ? "bg-zinc-700 text-zinc-200"
+            : "hover:bg-zinc-800 text-zinc-200"
         } ${isDragging ? "opacity-50" : ""}`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
