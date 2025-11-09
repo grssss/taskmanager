@@ -119,11 +119,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* Debug Panel - Always show for now to help debug */}
-      <WorkspaceDebugPanel
-        workspaceState={workspaceState}
-        onFix={handleFixData}
-      />
+      {/* Debug Panel - Only show for specific account */}
+      {user.email === 'temppookerrr2@gmail.com' && (
+        <WorkspaceDebugPanel
+          workspaceState={workspaceState}
+          onFix={handleFixData}
+        />
+      )}
 
       {/* Warning if no pages in sidebar */}
       {hasNoPagesInSidebar && (
