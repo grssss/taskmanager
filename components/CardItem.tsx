@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { isAfter, isToday, isYesterday, differenceInDays } from "date-fns";
 import { Link as LinkIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Card, Category, Priority } from "@/lib/types";
+import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
 
 const PRIORITY_STYLES: Record<Priority, { label: string; className: string }> = {
   low: {

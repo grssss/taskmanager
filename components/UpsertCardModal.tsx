@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, Category, Priority } from "@/lib/types";
-import { Plus, Trash2, X } from "lucide-react";
+import { Card, Category, Priority, ChecklistItem } from "@/lib/types";
+import { Plus, Trash2, X, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Props = {
   open: boolean;
@@ -20,6 +23,28 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   const [dueDate, setDueDate] = useState<string | undefined>(card?.dueDate);
   const [priority, setPriority] = useState<Priority>(card?.priority ?? "medium");
   const [links, setLinks] = useState(card?.links ?? []);
+  const [status, setStatus] = useState(card?.status ?? "");
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist ?? []);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleChecklistDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setChecklist((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  };
 
   useEffect(() => {
     setTitle(card?.title ?? "");
@@ -28,6 +53,9 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     setDueDate(card?.dueDate);
     setPriority(card?.priority ?? "medium");
     setLinks(card?.links ?? []);
+    setStatus(card?.status ?? "");
+    setChecklist(card?.checklist ?? []);
+    setDescriptionExpanded(false);
   }, [card, open]);
 
   const valid = title.trim().length > 0;
@@ -40,9 +68,53 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
           <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full resize-none rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Description</label>
+            {description && (
+              <button
+                type="button"
+                onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                {descriptionExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {descriptionExpanded ? "Collapse" : "Expand"}
+              </button>
+            )}
+          </div>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={descriptionExpanded ? 4 : 1} className="w-full resize-none rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
         </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Status:</label>
+          <input
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            placeholder="Enter status description"
+            className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+          />
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Task Checklist</span>
+            <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
+          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleChecklistDragEnd}>
+            <SortableContext items={checklist.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+              <div className="mt-2 space-y-2">
+                {checklist.map((item, i) => (
+                  <SortableChecklistItem
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    onCheck={(checked) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, checked } : x))}
+                    onTextChange={(text) => setChecklist((arr) => arr.map((x, idx) => idx === i ? { ...x, text } : x))}
+                    onDelete={() => setChecklist((arr) => arr.filter((_, idx) => idx !== i))}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Categories</label>
@@ -93,14 +165,14 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="block text-xs text-zinc-600 dark:text-zinc-400">Links</label>
-            <button onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
+            <button type="button" onClick={() => setLinks((l) => [...l, { label: "", url: "" }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
           </div>
           <div className="space-y-2">
             {links.map((l, i) => (
               <div key={i} className="grid grid-cols-5 items-center gap-2">
                 <input placeholder="Label" value={l.label} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="col-span-2 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
                 <input placeholder="https://" value={l.url} onChange={(e) => setLinks((arr) => arr.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))} className="col-span-3 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800" />
-                <button onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="-ml-1 rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
+                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="-ml-1 rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
@@ -119,6 +191,8 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 dueDate,
                 priority,
                 links: links.filter((l) => l.url),
+                status,
+                checklist: checklist.filter((item) => item.text.trim()),
               })
             }
             className="rounded-full bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
@@ -128,6 +202,51 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
       </div>
     </Dialog>
+  );
+}
+
+type SortableChecklistItemProps = {
+  item: ChecklistItem;
+  index: number;
+  onCheck: (checked: boolean) => void;
+  onTextChange: (text: string) => void;
+  onDelete: () => void;
+};
+
+function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }: SortableChecklistItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+        <GripVertical size={16} />
+      </div>
+      <input
+        type="checkbox"
+        checked={item.checked}
+        onChange={(e) => onCheck(e.target.checked)}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
+      />
+      <input
+        placeholder="Checklist item"
+        value={item.text}
+        onChange={(e) => onTextChange(e.target.value)}
+        className="flex-1 rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+      />
+      <button
+        type="button"
+        onClick={onDelete}
+        className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        aria-label="Remove checklist item"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
   );
 }
 
