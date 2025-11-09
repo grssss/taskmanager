@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Trash2,
   Edit2,
+  X,
 } from "lucide-react";
 import {
   WorkspaceState,
@@ -72,7 +73,7 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col items-center py-4">
+      <div className="hidden md:flex w-12 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex-col items-center py-4">
         <button
           onClick={onToggleCollapse}
           className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
@@ -231,10 +232,18 @@ export default function Sidebar({
 
   return (
     <>
+      {/* Mobile backdrop - shown when sidebar is open on mobile */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity ${
+          collapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+        onClick={onToggleCollapse}
+      />
+
       {/* Backdrop for workspace menu */}
       {showWorkspaceMenu && (
         <div
-          className="fixed inset-0 z-30"
+          className="fixed inset-0 z-40"
           onClick={() => setShowWorkspaceMenu(false)}
         />
       )}
@@ -242,12 +251,17 @@ export default function Sidebar({
       {/* Backdrop for new page menu */}
       {showNewPageMenu && (
         <div
-          className="fixed inset-0 z-30"
+          className="fixed inset-0 z-40"
           onClick={() => setShowNewPageMenu(false)}
         />
       )}
 
-      <div className="w-64 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col h-screen">
+      <div className={`
+        w-80 md:w-64 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col h-screen
+        fixed md:relative z-40 md:z-0
+        transition-transform duration-300 ease-in-out
+        ${collapsed ? "-translate-x-full md:translate-x-0" : "translate-x-0"}
+      `}>
         {/* Header */}
         <div className="p-4 border-b border-black/10 dark:border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
@@ -260,9 +274,18 @@ export default function Sidebar({
               </span>
               <ChevronDown size={14} className={`shrink-0 transition-transform ${showWorkspaceMenu ? 'rotate-180' : ''}`} />
             </button>
+            {/* Close button for mobile */}
             <button
               onClick={onToggleCollapse}
-              className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="md:hidden p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              title="Close sidebar"
+            >
+              <X size={20} />
+            </button>
+            {/* Collapse button for desktop */}
+            <button
+              onClick={onToggleCollapse}
+              className="hidden md:block p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
               title="Collapse sidebar"
             >
               <ChevronDown size={16} className="rotate-[-90deg]" />

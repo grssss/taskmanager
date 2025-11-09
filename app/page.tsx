@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import AuthForm from "@/components/AuthForm";
 import UserProfile from "@/components/UserProfile";
 import Sidebar from "@/components/Sidebar";
@@ -12,7 +13,27 @@ import { getRootPages } from "@/lib/types";
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [workspaceState, setWorkspaceState, storageLoading, syncStatus] = useWorkspaceStorage();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Start collapsed on mobile
+
+  // Detect screen size and set initial sidebar state
+  useEffect(() => {
+    const handleResize = () => {
+      // On desktop (>= 768px), show sidebar by default
+      if (window.innerWidth >= 768) {
+        setSidebarCollapsed(false);
+      } else {
+        // On mobile, keep collapsed
+        setSidebarCollapsed(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Listen for resize events
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (authLoading || storageLoading) {
     return (
@@ -64,7 +85,18 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <UserProfile />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Hamburger menu button for mobile */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 shadow-lg transition-opacity ${
+            sidebarCollapsed ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          title="Open sidebar"
+        >
+          <Menu size={20} />
+        </button>
+
         <Sidebar
           workspaceState={workspaceState}
           onStateChange={setWorkspaceState}
