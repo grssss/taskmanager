@@ -25,6 +25,7 @@ import {
   deletePage,
   updatePage,
   togglePageCollapsed,
+  reorderPages,
 } from "@/lib/pageUtils";
 
 interface SidebarProps {
@@ -51,6 +52,9 @@ export default function Sidebar({
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [showNewPageMenu, setShowNewPageMenu] = useState(false);
   const [showSubpageMenu, setShowSubpageMenu] = useState<string | null>(null);
+  const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
+  const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<"before" | "after" | null>(null);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
@@ -127,6 +131,90 @@ export default function Sidebar({
   const handleToggleCollapsed = (pageId: string) => {
     const newState = togglePageCollapsed(workspaceState, pageId);
     onStateChange(newState);
+  };
+
+  const handleDragStart = (pageId: string) => {
+    setDraggedPageId(pageId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, pageId: string) => {
+    e.preventDefault();
+    if (draggedPageId === pageId) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const position = e.clientY < midpoint ? "before" : "after";
+
+    setDropTargetPageId(pageId);
+    setDropPosition(position);
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetPageId(null);
+    setDropPosition(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetPageId: string) => {
+    e.preventDefault();
+    if (!draggedPageId || draggedPageId === targetPageId) {
+      setDraggedPageId(null);
+      setDropTargetPageId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    const draggedPage = workspaceState.pages[draggedPageId];
+    const targetPage = workspaceState.pages[targetPageId];
+
+    if (!draggedPage || !targetPage) return;
+
+    // Only allow reordering within the same parent
+    if (draggedPage.parentPageId !== targetPage.parentPageId) {
+      setDraggedPageId(null);
+      setDropTargetPageId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    // Get all siblings
+    const siblings = getPageChildren(workspaceState.pages, draggedPage.parentPageId || "")
+      .filter((p) => p.workspaceId === workspaceState.activeWorkspaceId && (!draggedPage.parentPageId || p.parentPageId === draggedPage.parentPageId));
+
+    // If no parent, get root pages instead
+    const allSiblings = draggedPage.parentPageId
+      ? siblings
+      : getRootPages(workspaceState.pages, workspaceState.activeWorkspaceId);
+
+    // Remove the dragged page from siblings
+    const filteredSiblings = allSiblings.filter((p) => p.id !== draggedPageId);
+
+    // Find the target index
+    const targetIndex = filteredSiblings.findIndex((p) => p.id === targetPageId);
+    if (targetIndex === -1) return;
+
+    // Insert the dragged page at the new position
+    const newOrder = [...filteredSiblings];
+    const insertIndex = dropPosition === "before" ? targetIndex : targetIndex + 1;
+    newOrder.splice(insertIndex, 0, draggedPage);
+
+    // Update the state with new order
+    const newState = reorderPages(
+      workspaceState,
+      newOrder.map((p) => p.id),
+      draggedPage.parentPageId
+    );
+
+    onStateChange(newState);
+
+    setDraggedPageId(null);
+    setDropTargetPageId(null);
+    setDropPosition(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPageId(null);
+    setDropTargetPageId(null);
+    setDropPosition(null);
   };
 
   const rootPages = getRootPages(
@@ -262,6 +350,14 @@ export default function Sidebar({
                 onSelect={onPageSelect}
                 onToggleCollapsed={handleToggleCollapsed}
                 onContextMenu={(pageId, x, y) => setContextMenu({ pageId, x, y })}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                draggedPageId={draggedPageId}
+                dropTargetPageId={dropTargetPageId}
+                dropPosition={dropPosition}
                 level={0}
               />
             ))}
@@ -368,6 +464,14 @@ interface PageTreeItemProps {
   onSelect: (pageId: string) => void;
   onToggleCollapsed: (pageId: string) => void;
   onContextMenu: (pageId: string, x: number, y: number) => void;
+  onDragStart: (pageId: string) => void;
+  onDragOver: (e: React.DragEvent, pageId: string) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, pageId: string) => void;
+  onDragEnd: () => void;
+  draggedPageId: string | null;
+  dropTargetPageId: string | null;
+  dropPosition: "before" | "after" | null;
   level: number;
 }
 
@@ -378,11 +482,21 @@ function PageTreeItem({
   onSelect,
   onToggleCollapsed,
   onContextMenu,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  draggedPageId,
+  dropTargetPageId,
+  dropPosition,
   level,
 }: PageTreeItemProps) {
   const children = getPageChildren(pages, page.id);
   const hasChildren = children.length > 0;
   const isActive = page.id === activePageId;
+  const isDragging = draggedPageId === page.id;
+  const isDropTarget = dropTargetPageId === page.id;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -391,15 +505,39 @@ function PageTreeItem({
   };
 
   return (
-    <div>
+    <div className="relative">
+      {isDropTarget && dropPosition === "before" && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
+      )}
       <button
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation();
+          onDragStart(page.id);
+        }}
+        onDragOver={(e) => {
+          e.stopPropagation();
+          onDragOver(e, page.id);
+        }}
+        onDragLeave={(e) => {
+          e.stopPropagation();
+          onDragLeave();
+        }}
+        onDrop={(e) => {
+          e.stopPropagation();
+          onDrop(e, page.id);
+        }}
+        onDragEnd={(e) => {
+          e.stopPropagation();
+          onDragEnd();
+        }}
         onClick={() => onSelect(page.id)}
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
             ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
             : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
-        }`}
+        } ${isDragging ? "opacity-50" : ""}`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
         {hasChildren && (
@@ -443,6 +581,9 @@ function PageTreeItem({
           <MoreHorizontal size={14} />
         </span>
       </button>
+      {isDropTarget && dropPosition === "after" && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
+      )}
 
       {/* Children */}
       {hasChildren && !page.collapsed && (
@@ -456,6 +597,14 @@ function PageTreeItem({
               onSelect={onSelect}
               onToggleCollapsed={onToggleCollapsed}
               onContextMenu={onContextMenu}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              onDragEnd={onDragEnd}
+              draggedPageId={draggedPageId}
+              dropTargetPageId={dropTargetPageId}
+              dropPosition={dropPosition}
               level={level + 1}
             />
           ))}
