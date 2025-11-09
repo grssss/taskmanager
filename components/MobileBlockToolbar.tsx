@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { ContentBlockType } from "@/lib/types";
-import { useVisualViewportHeight } from "@/lib/useKeyboardHeight";
+import { useVisualViewportMetrics } from "@/lib/useKeyboardHeight";
 
 interface MobileBlockToolbarProps {
   onBlockTypeSelect: (type: ContentBlockType) => void;
@@ -35,7 +35,11 @@ export default function MobileBlockToolbar({
 }: MobileBlockToolbarProps) {
   const [showBlockMenu, setShowBlockMenu] = useState(false);
   const [showMediaMenu, setShowMediaMenu] = useState(false);
-  const viewportHeight = useVisualViewportHeight();
+  const toolbarHeight = 56; // matches button row height
+  const { height: viewportHeight, offsetTop } = useVisualViewportMetrics();
+  const toolbarAnchor = viewportHeight + offsetTop;
+  const toolbarAnchorPx = `${toolbarAnchor}px`;
+  const menuTranslate = `translateY(calc(-100% - ${toolbarHeight}px))`;
 
   const blockTypes = [
     { type: "paragraph" as ContentBlockType, label: "Text", icon: Type },
@@ -60,8 +64,8 @@ export default function MobileBlockToolbar({
           <div
             className="fixed left-0 right-0 z-50 bg-zinc-900 border-t border-white/10 max-h-96 overflow-y-auto"
             style={{
-              top: `${viewportHeight}px`,
-              transform: 'translateY(calc(-100% - 56px))',
+              top: toolbarAnchorPx,
+              transform: menuTranslate,
             }}
           >
             <div className="p-2 border-b border-white/10 flex items-center justify-between">
@@ -105,8 +109,8 @@ export default function MobileBlockToolbar({
           <div
             className="fixed left-0 right-0 z-50 bg-zinc-900 border-t border-white/10"
             style={{
-              top: `${viewportHeight}px`,
-              transform: 'translateY(calc(-100% - 56px))',
+              top: toolbarAnchorPx,
+              transform: menuTranslate,
             }}
           >
             <div className="p-2 border-b border-white/10 flex items-center justify-between">
@@ -158,9 +162,9 @@ export default function MobileBlockToolbar({
       <div
         className="fixed left-0 right-0 z-30 bg-zinc-900 border-t border-white/10"
         style={{
-          top: `${viewportHeight}px`,
-          transform: 'translateY(-100%)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          top: toolbarAnchorPx,
+          transform: "translateY(-100%)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         <div className="flex items-center gap-2 px-3 py-2.5 overflow-x-auto scrollbar-hide">

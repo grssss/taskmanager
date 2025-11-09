@@ -52,41 +52,58 @@ export function useKeyboardHeight(): number {
 }
 
 /**
- * Hook to get the visual viewport height (visible area excluding keyboard)
- * Useful for positioning elements that should appear above the keyboard
+ * Hook to get visual viewport metrics (visible height + offset)
+ * Useful for positioning UI that needs to hug the keyboard on mobile browsers
  */
-export function useVisualViewportHeight(): number {
-  const [viewportHeight, setViewportHeight] = useState(
-    typeof window !== 'undefined' ? window.innerHeight : 0
-  );
+export interface VisualViewportMetrics {
+  height: number;
+  offsetTop: number;
+}
+
+export function useVisualViewportMetrics(): VisualViewportMetrics {
+  const [metrics, setMetrics] = useState<VisualViewportMetrics>(() => ({
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+    offsetTop: 0,
+  }));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (!window.visualViewport) {
-      // Fallback to window height
-      return;
-    }
-
-    const updateViewportHeight = () => {
+    const updateMetrics = () => {
       const visualViewport = window.visualViewport;
       if (visualViewport) {
-        setViewportHeight(visualViewport.height);
+        setMetrics({
+          height: visualViewport.height,
+          offsetTop: visualViewport.offsetTop ?? 0,
+        });
+      } else {
+        setMetrics({
+          height: window.innerHeight,
+          offsetTop: 0,
+        });
       }
     };
 
     // Initial value
-    updateViewportHeight();
+    updateMetrics();
 
     // Listen for changes
-    window.visualViewport.addEventListener('resize', updateViewportHeight);
-    window.visualViewport.addEventListener('scroll', updateViewportHeight);
+    window.visualViewport?.addEventListener('resize', updateMetrics);
+    window.visualViewport?.addEventListener('scroll', updateMetrics);
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateViewportHeight);
-      window.visualViewport?.removeEventListener('scroll', updateViewportHeight);
+      window.visualViewport?.removeEventListener('resize', updateMetrics);
+      window.visualViewport?.removeEventListener('scroll', updateMetrics);
     };
   }, []);
 
-  return viewportHeight;
+  return metrics;
+}
+
+/**
+ * Legacy helper that exposes only the viewport height
+ */
+export function useVisualViewportHeight(): number {
+  const { height } = useVisualViewportMetrics();
+  return height;
 }
