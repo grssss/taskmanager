@@ -84,6 +84,7 @@ function sanitizeBoardState(value: unknown): BoardState {
         ...cardValue,
         categoryIds: Array.isArray(cardValue.categoryIds) ? [...cardValue.categoryIds] : cardValue.categoryIds,
         links: Array.isArray(cardValue.links) ? cardValue.links.map((link) => ({ ...link })) : cardValue.links,
+        status: cardValue.status ?? "",
         checklist: Array.isArray(cardValue.checklist) ? cardValue.checklist.map((item) => ({ ...item })) : cardValue.checklist,
       };
     }
@@ -310,6 +311,7 @@ export default function Board() {
         dueDate: card.dueDate ?? existing?.dueDate,
         priority: card.priority ?? existing?.priority ?? "medium",
         links: card.links ?? existing?.links ?? [],
+        status: card.status ?? existing?.status ?? "",
         checklist: card.checklist ?? existing?.checklist ?? [],
       };
       const cards = { ...prev.cards, [id]: full };

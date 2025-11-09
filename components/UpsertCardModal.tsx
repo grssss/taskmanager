@@ -23,6 +23,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   const [dueDate, setDueDate] = useState<string | undefined>(card?.dueDate);
   const [priority, setPriority] = useState<Priority>(card?.priority ?? "medium");
   const [links, setLinks] = useState(card?.links ?? []);
+  const [status, setStatus] = useState(card?.status ?? "");
   const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist ?? []);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
@@ -52,6 +53,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
     setDueDate(card?.dueDate);
     setPriority(card?.priority ?? "medium");
     setLinks(card?.links ?? []);
+    setStatus(card?.status ?? "");
     setChecklist(card?.checklist ?? []);
     setDescriptionExpanded(false);
   }, [card, open]);
@@ -83,13 +85,21 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
 
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs text-zinc-600 dark:text-zinc-400">Checklist</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Status:</label>
+          <input
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            placeholder="Enter status description"
+            className="w-full rounded-md bg-zinc-100 px-3 py-2 text-sm outline-none dark:bg-zinc-800"
+          />
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Task Checklist</span>
             <button type="button" onClick={() => setChecklist((c) => [...c, { id: crypto.randomUUID(), text: "", checked: false }])} className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs text-white dark:bg-white dark:text-black"><Plus size={14} /> Add</button>
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleChecklistDragEnd}>
             <SortableContext items={checklist.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div className="mt-2 space-y-2">
                 {checklist.map((item, i) => (
                   <SortableChecklistItem
                     key={item.id}
@@ -181,6 +191,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 dueDate,
                 priority,
                 links: links.filter((l) => l.url),
+                status,
                 checklist: checklist.filter((item) => item.text.trim()),
               })
             }

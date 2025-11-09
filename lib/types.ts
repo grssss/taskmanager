@@ -20,6 +20,7 @@ export interface Card {
   dueDate?: string; // ISO date
   priority: Priority;
   links?: LinkItem[];
+  status?: string;
   checklist?: ChecklistItem[];
 }
 
