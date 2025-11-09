@@ -32,7 +32,6 @@ type Props = {
   categories: Category[];
   onEdit: () => void;
   onDelete: () => void;
-  onChecklistChange: (checklistItemId: string, checked: boolean) => void;
 };
 
 type CardBodyProps = {
@@ -40,10 +39,9 @@ type CardBodyProps = {
   categories: Category[];
   onDelete?: () => void;
   showActions?: boolean;
-  onChecklistChange?: (checklistItemId: string, checked: boolean) => void;
 };
 
-function CardBody({ card, categories, onDelete, showActions = true, onChecklistChange }: CardBodyProps) {
+function CardBody({ card, categories, onDelete, showActions = true }: CardBodyProps) {
   const cardCategories = categories.filter((c) => card.categoryIds?.includes(c.id));
   const cardCreatedDate = new Date(card.createdAt);
 
@@ -117,37 +115,11 @@ function CardBody({ card, categories, onDelete, showActions = true, onChecklistC
           ))}
         </div>
       ) : null}
-      {card.checklist && card.checklist.length > 0 ? (
-        <div className="mt-3 space-y-1.5">
-          {card.checklist.map((item) => (
-            <label
-              key={item.id}
-              className="flex items-start gap-2 text-xs cursor-pointer group/checkbox"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onChecklistChange?.(item.id, e.target.checked);
-                }}
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer rounded border border-black/20 dark:border-white/20"
-              />
-              <span className={`break-words ${item.checked ? "line-through text-zinc-400 dark:text-zinc-500" : "text-zinc-700 dark:text-zinc-300"}`}>
-                {item.text}
-              </span>
-            </label>
-          ))}
-        </div>
-      ) : null}
     </>
   );
 }
 
-export default function CardItem({ columnId, card, categories, onEdit, onDelete, onChecklistChange }: Props) {
+export default function CardItem({ columnId, card, categories, onEdit, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `card:${columnId}:${card.id}` });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -170,7 +142,7 @@ export default function CardItem({ columnId, card, categories, onEdit, onDelete,
         isDragging ? "ring-2 ring-indigo-400 shadow-lg dark:ring-indigo-300/60" : ""
       }`}
     >
-      <CardBody card={card} categories={categories} onDelete={onDelete} onChecklistChange={onChecklistChange} />
+      <CardBody card={card} categories={categories} onDelete={onDelete} />
     </article>
   );
 }

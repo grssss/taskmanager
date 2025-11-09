@@ -339,28 +339,6 @@ export default function Board() {
     });
   };
 
-  const updateCardChecklist = (cardId: string, checklistItemId: string, checked: boolean) => {
-    updateActiveBoard((prev) => {
-      const card = prev.cards[cardId];
-      if (!card || !card.checklist) return prev;
-
-      const updatedChecklist = card.checklist.map((item) =>
-        item.id === checklistItemId ? { ...item, checked } : item
-      );
-
-      return {
-        ...prev,
-        cards: {
-          ...prev.cards,
-          [cardId]: {
-            ...card,
-            checklist: updatedChecklist,
-          },
-        },
-      };
-    });
-  };
-
   const saveColumns = (columns: Column[]) => {
     updateActiveBoard((prev) => ({ ...prev, columns }));
   };
@@ -551,7 +529,6 @@ export default function Board() {
                   onAdd={() => handleCreate(column.id)}
                   onEdit={(id) => setEditingCard({ id })}
                   onDelete={deleteCard}
-                  onChecklistChange={updateCardChecklist}
                 />
               </div>
             ))}
