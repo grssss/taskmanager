@@ -8,11 +8,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { userId, appState } = body
+    const { userId, appState, workspaceState } = body
 
-    if (!userId || !appState) {
+    if (!userId || (!appState && !workspaceState)) {
       return NextResponse.json(
-        { error: 'Missing userId or appState' },
+        { error: 'Missing userId or state data' },
         { status: 400 }
       )
     }
@@ -20,13 +20,24 @@ export async function POST(request: Request) {
     // Create a Supabase client for this request
     const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
+    // Prepare update data
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    }
+
+    // Support both old appState and new workspaceState
+    if (workspaceState) {
+      updateData.workspace_state = workspaceState
+      updateData.schema_version = 2
+    } else if (appState) {
+      updateData.app_state = appState
+      updateData.schema_version = 1
+    }
+
     // Update the user's data
     const { error } = await (supabase as any)
       .from('user_data')
-      .update({
-        app_state: appState,
-        updated_at: new Date().toISOString(),
-      } as any)
+      .update(updateData)
       .eq('user_id', userId)
 
     if (error) {

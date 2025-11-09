@@ -14,7 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Tags, Cloud, CloudOff, Loader2, FolderCog } from "lucide-react";
+import { Plus, SlidersHorizontal, Tags, Cloud, CloudOff, Loader2, FolderCog, LayoutGrid, Table2 } from "lucide-react";
 import { useSupabaseStorage } from "@/lib/useSupabaseStorage";
 import {
   AppState,
@@ -27,6 +27,7 @@ import {
   defaultState,
 } from "@/lib/types";
 import ColumnView from "@/components/ColumnView";
+import TableView from "@/components/TableView";
 import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import ManageProjectsModal from "@/components/ManageProjectsModal";
@@ -118,6 +119,7 @@ export default function Board() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showHighPriorityOnly, setShowHighPriorityOnly] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -373,9 +375,9 @@ export default function Board() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-20">
-      <header className="mb-6 flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="mx-auto max-w-[1400px] px-4 pb-8 pt-20 min-h-screen bg-background">
+      <header className="mb-6 flex flex-col gap-4 relative z-40">
+        <div className="flex flex-wrap items-center gap-3 bg-background">
           <label
             htmlFor="project-select"
             className="text-sm font-medium text-zinc-600 dark:text-zinc-300"
@@ -386,10 +388,10 @@ export default function Board() {
             id="project-select"
             value={appState.activeProjectId}
             onChange={(event) => handleSelectProject(event.target.value)}
-            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40"
+            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40 cursor-pointer"
           >
             {appState.projects.map((project) => (
-              <option key={project.id} value={project.id}>
+              <option key={project.id} value={project.id} className="bg-white text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
                 {project.name}
               </option>
             ))}
@@ -437,6 +439,28 @@ export default function Board() {
             <h1 className="text-2xl font-semibold tracking-tight">{activeProject.name}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-0.5 rounded-full border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900 p-1">
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  viewMode === "kanban"
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+                }`}
+              >
+                <LayoutGrid size={16} /> Kanban
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  viewMode === "table"
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+                }`}
+              >
+                <Table2 size={16} /> Table
+              </button>
+            </div>
             <button
               onClick={() => setShowCategories(true)}
               className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
@@ -489,54 +513,66 @@ export default function Board() {
         </label>
       </section>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          <SortableContext items={columnIds}>
-            {board.columns.map((column) => (
-              <div key={column.id} className="min-w-[320px] max-w-[360px] flex-1">
-                <ColumnView
-                  key={column.id}
-                  column={column}
-                  cards={column.cardIds
-                    .map((cardId) => board.cards[cardId])
-                    .filter(Boolean)
-                    .filter((card) => {
-                      if (!card) return false;
+      {viewMode === "kanban" ? (
+        <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            <SortableContext items={columnIds}>
+              {board.columns.map((column) => (
+                <div key={column.id} className="min-w-[320px] max-w-[360px] flex-1">
+                  <ColumnView
+                    key={column.id}
+                    column={column}
+                    cards={column.cardIds
+                      .map((cardId) => board.cards[cardId])
+                      .filter(Boolean)
+                      .filter((card) => {
+                        if (!card) return false;
 
-                      // Priority filter
-                      if (showHighPriorityOnly && !(card.priority === "high" || card.priority === "critical")) {
-                        return false;
-                      }
-
-                      // Category filter
-                      if (activeFiltersSafe.length > 0) {
-                        const categoriesForCard =
-                          card.categoryIds ??
-                          ((card as unknown as { categoryId?: string }).categoryId
-                            ? [((card as unknown as { categoryId?: string }).categoryId as string)]
-                            : []);
-                        if (!categoriesForCard || categoriesForCard.length === 0) return false;
-                        if (!categoriesForCard.some((categoryId) => activeFiltersSafe.includes(categoryId))) {
+                        // Priority filter
+                        if (showHighPriorityOnly && !(card.priority === "high" || card.priority === "critical")) {
                           return false;
                         }
-                      }
+
+                        // Category filter
+                        if (activeFiltersSafe.length > 0) {
+                          const categoriesForCard =
+                            card.categoryIds ??
+                            ((card as unknown as { categoryId?: string }).categoryId
+                              ? [((card as unknown as { categoryId?: string }).categoryId as string)]
+                              : []);
+                          if (!categoriesForCard || categoriesForCard.length === 0) return false;
+                          if (!categoriesForCard.some((categoryId) => activeFiltersSafe.includes(categoryId))) {
+                            return false;
+                          }
+                        }
 
 
-                      return true;
-                    })}
-                  categories={board.categories}
-                  onAdd={() => handleCreate(column.id)}
-                  onEdit={(id) => setEditingCard({ id })}
-                  onDelete={deleteCard}
-                />
-              </div>
-            ))}
-          </SortableContext>
-        </div>
-        <DragOverlay dropAnimation={dropAnimation}>
-          {activeDragCard ? <CardPreview card={activeDragCard} categories={board.categories} /> : null}
-        </DragOverlay>
-      </DndContext>
+                        return true;
+                      })}
+                    categories={board.categories}
+                    onAdd={() => handleCreate(column.id)}
+                    onEdit={(id) => setEditingCard({ id })}
+                    onDelete={deleteCard}
+                  />
+                </div>
+              ))}
+            </SortableContext>
+          </div>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeDragCard ? <CardPreview card={activeDragCard} categories={board.categories} /> : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <TableView
+          columns={board.columns}
+          cards={board.cards}
+          categories={board.categories}
+          onEdit={(id) => setEditingCard({ id })}
+          onDelete={deleteCard}
+          activeFilters={activeFiltersSafe}
+          showHighPriorityOnly={showHighPriorityOnly}
+        />
+      )}
 
       <UpsertCardModal
         open={!!editingCard}
