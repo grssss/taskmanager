@@ -49,6 +49,8 @@ export default function Sidebar({
     y: number;
   } | null>(null);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
+  const [showNewPageMenu, setShowNewPageMenu] = useState(false);
+  const [showSubpageMenu, setShowSubpageMenu] = useState<string | null>(null);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
@@ -78,17 +80,10 @@ export default function Sidebar({
     );
   }
 
-  const handleCreatePage = (parentPageId?: string) => {
-    const title = prompt("Page title:", "Untitled");
-    if (!title) return;
-
-    const type = confirm("Create a database page? (Cancel for document page)")
-      ? "database"
-      : "document";
-
+  const handleCreatePage = (type: "document" | "database", parentPageId?: string) => {
     const newPage = createPage(
       workspaceState.activeWorkspaceId,
-      title,
+      "Untitled",
       type,
       parentPageId
     );
@@ -99,6 +94,7 @@ export default function Sidebar({
         ...newState,
         activePageId: newPage.id,
       });
+      setShowNewPageMenu(false);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to create page");
     }
@@ -152,6 +148,14 @@ export default function Sidebar({
         <div
           className="fixed inset-0 z-30"
           onClick={() => setShowWorkspaceMenu(false)}
+        />
+      )}
+
+      {/* Backdrop for new page menu */}
+      {showNewPageMenu && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => setShowNewPageMenu(false)}
         />
       )}
 
@@ -215,17 +219,37 @@ export default function Sidebar({
 
         {/* Pages list */}
         <div className="flex-1 overflow-y-auto p-2">
-          <div className="flex items-center justify-between mb-2 px-2">
+          <div className="flex items-center justify-between mb-2 px-2 relative">
             <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-medium">
               Pages
             </span>
             <button
-              onClick={() => handleCreatePage()}
+              onClick={() => setShowNewPageMenu(!showNewPageMenu)}
               className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
               title="New page"
             >
               <Plus size={14} />
             </button>
+
+            {/* New page menu */}
+            {showNewPageMenu && (
+              <div className="absolute top-full right-2 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
+                <button
+                  onClick={() => handleCreatePage("document")}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <FileText size={14} />
+                  <span>Document Page</span>
+                </button>
+                <button
+                  onClick={() => handleCreatePage("database")}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <Table2 size={14} />
+                  <span>Database Page</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-0.5">
@@ -242,17 +266,6 @@ export default function Sidebar({
               />
             ))}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-black/10 dark:border-white/10">
-          <button
-            onClick={() => handleCreatePage()}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-black text-white dark:bg-zinc-700 dark:text-zinc-200 hover:opacity-90 transition-opacity"
-          >
-            <Plus size={16} />
-            New Page
-          </button>
         </div>
       </div>
 
@@ -279,13 +292,13 @@ export default function Sidebar({
             </button>
             <button
               onClick={() => {
-                handleCreatePage(contextMenu.pageId);
-                setContextMenu(null);
+                setShowSubpageMenu(contextMenu.pageId);
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
             >
               <Plus size={14} />
               Add subpage
+              <ChevronRight size={14} className="ml-auto" />
             </button>
             <div className="border-t border-black/10 dark:border-white/10 my-1" />
             <button
@@ -297,6 +310,49 @@ export default function Sidebar({
             >
               <Trash2 size={14} />
               Delete
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Subpage type menu */}
+      {showSubpageMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setShowSubpageMenu(null);
+              setContextMenu(null);
+            }}
+          />
+          <div
+            className="fixed z-50 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
+            style={{
+              left: contextMenu ? contextMenu.x + 170 : 0,
+              top: contextMenu ? contextMenu.y + 30 : 0
+            }}
+          >
+            <button
+              onClick={() => {
+                handleCreatePage("document", showSubpageMenu);
+                setShowSubpageMenu(null);
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+            >
+              <FileText size={14} />
+              Document Page
+            </button>
+            <button
+              onClick={() => {
+                handleCreatePage("database", showSubpageMenu);
+                setShowSubpageMenu(null);
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+            >
+              <Table2 size={14} />
+              Database Page
             </button>
           </div>
         </>
