@@ -39,6 +39,34 @@ export default function RootLayout({
                   document.documentElement.style.color = '#ededed';
                 } catch (e) {}
               })();
+
+              // Global error handler for browser extension errors
+              window.addEventListener('error', function(event) {
+                // Suppress errors from browser extensions (ethereum, crypto wallets, etc.)
+                if (event.message && (
+                  event.message.includes('ethereum') ||
+                  event.message.includes('crypto') ||
+                  event.message.includes('wallet') ||
+                  event.message.includes('selectedAddress')
+                )) {
+                  event.preventDefault();
+                  console.warn('Browser extension error suppressed:', event.message);
+                  return true;
+                }
+              });
+
+              // Suppress unhandledrejection errors from extensions
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && event.reason.message && (
+                  event.reason.message.includes('ethereum') ||
+                  event.reason.message.includes('crypto') ||
+                  event.reason.message.includes('wallet')
+                )) {
+                  event.preventDefault();
+                  console.warn('Browser extension promise rejection suppressed:', event.reason);
+                  return true;
+                }
+              });
             `,
           }}
         />

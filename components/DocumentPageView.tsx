@@ -5,21 +5,46 @@ import { WorkspaceState, Page, ContentBlock, ContentBlockType } from "@/lib/type
 import { updatePage } from "@/lib/pageUtils";
 import { Plus } from "lucide-react";
 import EditableBlock from "./EditableBlock";
+import MobileBlockToolbar from "./MobileBlockToolbar";
 
 interface DocumentPageViewProps {
   page: Page & { content: ContentBlock[] };
   workspaceState: WorkspaceState;
   onStateChange: (state: WorkspaceState) => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 export default function DocumentPageView({
   page,
   workspaceState,
   onStateChange,
+  onEditingChange,
 }: DocumentPageViewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(page.title);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window === 'undefined') return;
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Notify parent when editing state changes
+  useEffect(() => {
+    if (isMobile && onEditingChange) {
+      onEditingChange(showToolbar || isEditingTitle);
+    }
+  }, [showToolbar, isEditingTitle, isMobile, onEditingChange]);
 
   // Sync title state when page changes
   useEffect(() => {
@@ -161,10 +186,10 @@ export default function DocumentPageView({
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      {/* Page Icon & Title */}
-      <div className="mb-8">
-        {page.icon && (
+    <div className={`mx-auto max-w-3xl ${isMobile ? 'px-4 py-4' : 'px-6 py-8'} ${showToolbar ? 'pb-32' : ''}`}>
+      {/* Page Icon & Title - Simplified for mobile */}
+      <div className={isMobile ? 'mb-4' : 'mb-8'}>
+        {!isMobile && page.icon && (
           <div className="text-6xl mb-4">
             {page.icon}
           </div>
@@ -183,15 +208,18 @@ export default function DocumentPageView({
                 setIsEditingTitle(false);
               }
             }}
-            onFocus={(e) => e.target.select()}
+            onFocus={(e) => {
+              e.target.select();
+              if (isMobile) setShowToolbar(false);
+            }}
             autoFocus
-            className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-100 placeholder-zinc-400"
+            className={`w-full ${isMobile ? 'text-2xl' : 'text-4xl'} font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-100 placeholder-zinc-400`}
             placeholder="Untitled"
           />
         ) : (
           <h1
             onClick={() => setIsEditingTitle(true)}
-            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-800 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100"
+            className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold mb-2 cursor-pointer hover:bg-zinc-800 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100`}
           >
             {page.title}
           </h1>
@@ -199,7 +227,7 @@ export default function DocumentPageView({
       </div>
 
       {/* Content Blocks */}
-      <div className="max-w-none pl-6">
+      <div className={`max-w-none ${isMobile ? 'pl-0' : 'pl-6'}`}>
         {page.content && page.content.length > 0 ? (
           page.content.map((block, index) => (
             <EditableBlock
@@ -211,7 +239,10 @@ export default function DocumentPageView({
               onMergeWithPrevious={handleBlockMerge}
               onMergeWithNext={handleBlockMergeWithNext}
               onTypeChange={handleBlockTypeChange}
-              onFocus={setFocusedBlockId}
+              onFocus={(blockId) => {
+                setFocusedBlockId(blockId);
+                if (isMobile) setShowToolbar(true);
+              }}
               shouldFocus={focusedBlockId === block.id}
               previousBlockId={index > 0 ? page.content[index - 1].id : undefined}
               nextBlockId={index < page.content.length - 1 ? page.content[index + 1].id : undefined}
@@ -234,6 +265,21 @@ export default function DocumentPageView({
           </div>
         )}
       </div>
+
+      {/* Mobile Block Toolbar */}
+      {isMobile && showToolbar && focusedBlockId && (
+        <MobileBlockToolbar
+          onBlockTypeSelect={(type) => {
+            handleBlockTypeChange(focusedBlockId, type);
+            setShowToolbar(false);
+          }}
+          onAddBlock={() => {
+            handleBlockCreate(focusedBlockId, "paragraph");
+            setShowToolbar(false);
+          }}
+          onClose={() => setShowToolbar(false)}
+        />
+      )}
     </div>
   );
 }

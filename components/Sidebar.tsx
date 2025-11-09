@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Trash2,
   Edit2,
+  X,
 } from "lucide-react";
 import {
   WorkspaceState,
@@ -34,6 +35,8 @@ interface SidebarProps {
   onPageSelect: (pageId: string) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export default function Sidebar({
@@ -42,6 +45,8 @@ export default function Sidebar({
   onPageSelect,
   collapsed,
   onToggleCollapse,
+  mobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
@@ -56,6 +61,20 @@ export default function Sidebar({
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<"before" | "after" | null>(null);
   const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/iPhone
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window === 'undefined') return;
+      const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+      setIsMobile(isMobileDevice);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
@@ -71,7 +90,8 @@ export default function Sidebar({
     setShowWorkspaceMenu(false);
   };
 
-  if (collapsed) {
+  // On desktop, show collapsed sidebar
+  if (collapsed && !isMobile) {
     return (
       <div className="w-12 bg-zinc-900 border-r border-white/10 flex flex-col items-center py-4">
         <button
@@ -84,6 +104,9 @@ export default function Sidebar({
       </div>
     );
   }
+
+  // On mobile, always render the sidebar (visibility controlled by mobileOpen prop)
+  // Don't return null here - we need the sidebar to slide in/out
 
   const handleCreatePage = (type: "document" | "database", parentPageId?: string) => {
     const newPage = createPage(
@@ -234,6 +257,14 @@ export default function Sidebar({
 
   return (
     <>
+      {/* Mobile backdrop overlay */}
+      {isMobile && mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
       {/* Backdrop for workspace menu */}
       {showWorkspaceMenu && (
         <div
@@ -250,7 +281,11 @@ export default function Sidebar({
         />
       )}
 
-      <div className="w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen">
+      <div className={`
+        w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen
+        ${isMobile ? 'fixed left-0 top-0 z-50 transition-transform duration-300' : ''}
+        ${isMobile && !mobileOpen ? '-translate-x-full' : 'translate-x-0'}
+      `}>
         {/* Header */}
         <div className="p-4 border-b border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
@@ -263,13 +298,23 @@ export default function Sidebar({
               </span>
               <ChevronDown size={14} className={`shrink-0 transition-transform ${showWorkspaceMenu ? 'rotate-180' : ''}`} />
             </button>
-            <button
-              onClick={onToggleCollapse}
-              className="p-1 rounded hover:bg-zinc-800 transition-colors"
-              title="Collapse sidebar"
-            >
-              <ChevronDown size={16} className="rotate-[-90deg]" />
-            </button>
+            {isMobile ? (
+              <button
+                onClick={onMobileClose}
+                className="p-1 rounded hover:bg-zinc-800 transition-colors"
+                title="Close sidebar"
+              >
+                <X size={20} />
+              </button>
+            ) : (
+              <button
+                onClick={onToggleCollapse}
+                className="p-1 rounded hover:bg-zinc-800 transition-colors"
+                title="Collapse sidebar"
+              >
+                <ChevronDown size={16} className="rotate-[-90deg]" />
+              </button>
+            )}
           </div>
 
           {/* Workspace selector dropdown */}

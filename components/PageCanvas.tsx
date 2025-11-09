@@ -4,19 +4,37 @@ import { WorkspaceState, Page, isDatabasePage, isDocumentPage } from "@/lib/type
 import { getPagePath } from "@/lib/types";
 import DatabasePageView from "./DatabasePageView";
 import DocumentPageView from "./DocumentPageView";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface PageCanvasProps {
   workspaceState: WorkspaceState;
   onStateChange: (state: WorkspaceState) => void;
   onPageSelect: (pageId: string) => void;
+  onBackClick?: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 export default function PageCanvas({
   workspaceState,
   onStateChange,
   onPageSelect,
+  onBackClick,
+  onEditingChange,
 }: PageCanvasProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window === 'undefined') return;
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { activePageId, pages } = workspaceState;
 
   if (!activePageId) {
@@ -59,6 +77,15 @@ export default function PageCanvas({
       {/* Breadcrumb */}
       <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+          {/* Mobile back button */}
+          {isMobile && onBackClick && (
+            <button
+              onClick={onBackClick}
+              className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100 transition-colors mr-2"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           {breadcrumbs.length === 0 && (
             <span className="text-zinc-500">Workspace</span>
           )}
@@ -103,6 +130,7 @@ export default function PageCanvas({
             page={activePage}
             workspaceState={workspaceState}
             onStateChange={onStateChange}
+            onEditingChange={onEditingChange}
           />
         ) : (
           <div className="p-6">
