@@ -55,15 +55,6 @@ interface SlashCommandMenuProps {
 // ============================================================================
 
 const SLASH_MENU_ITEMS: SlashMenuItem[] = [
-  // Core Text Blocks
-  {
-    type: "paragraph",
-    label: "Text",
-    description: "Plain text paragraph",
-    category: "Basic",
-    icon: Type,
-    keywords: ["text", "paragraph", "p"],
-  },
   {
     type: "heading1",
     label: "Heading 1",
@@ -87,6 +78,14 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     category: "Basic",
     icon: Heading3,
     keywords: ["h3", "subheading"],
+  },
+  {
+    type: "table",
+    label: "Table",
+    description: "Tabular data grid",
+    category: "Basic",
+    icon: Table,
+    keywords: ["table", "grid", "spreadsheet"],
   },
 
   // Lists
@@ -155,32 +154,6 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     category: "Text",
     icon: Code,
     keywords: ["code", "snippet", "pre", "programming"],
-  },
-
-  // Structured Content
-  {
-    type: "table",
-    label: "Table",
-    description: "Tabular data grid",
-    category: "Advanced",
-    icon: Table,
-    keywords: ["table", "grid", "spreadsheet"],
-  },
-  {
-    type: "database",
-    label: "Database",
-    description: "Full database view",
-    category: "Advanced",
-    icon: Database,
-    keywords: ["database", "data", "collection"],
-  },
-  {
-    type: "kanban",
-    label: "Kanban Board",
-    description: "Task board with columns",
-    category: "Advanced",
-    icon: Columns,
-    keywords: ["kanban", "board", "columns", "trello"],
   },
 
   // Media & Embeds
