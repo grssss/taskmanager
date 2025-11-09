@@ -435,15 +435,23 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
 }
 
 function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  const [mouseDownTarget, setMouseDownTarget] = useState<EventTarget | null>(null);
+
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={(e) => {
+        // Track where the mouse down occurred
+        setMouseDownTarget(e.target);
+      }}
       onClick={(e) => {
-        // Close when clicking backdrop
-        if (e.target === e.currentTarget) {
+        // Only close if both mousedown and click occurred on the backdrop
+        // This prevents closing when selecting text that extends outside the modal
+        if (e.target === e.currentTarget && mouseDownTarget === e.currentTarget) {
           onClose();
         }
+        setMouseDownTarget(null);
       }}
     >
       <div className="w-full max-w-2xl rounded-2xl border border-black/10 bg-white p-4 shadow-xl dark:bg-zinc-900 dark:border-white/10">
