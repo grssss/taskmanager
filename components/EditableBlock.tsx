@@ -161,6 +161,12 @@ export default function EditableBlock({
       }
     }
 
+    // Allow global shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+S) to bubble up
+    if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "y" || e.key === "s")) {
+      // Don't prevent default - let the global handler in page.tsx handle these
+      return;
+    }
+
     // Text formatting shortcuts
     if ((e.metaKey || e.ctrlKey) && e.key === "b") {
       e.preventDefault();
