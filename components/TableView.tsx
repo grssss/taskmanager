@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, Category, Column } from "@/lib/types";
 import { isAfter, isToday, isYesterday, differenceInDays } from "date-fns";
-import { ArrowUp, ArrowDown, Edit2, Trash2, Link as LinkIcon } from "lucide-react";
+import { ArrowUp, ArrowDown, Edit2, Trash2, Link as LinkIcon, FileText, Image as ImageIcon, File as FileIcon } from "lucide-react";
 import Link from "next/link";
 
 type SortField = "title" | "status" | "priority" | "dueDate" | "createdAt" | "column";
@@ -16,6 +16,18 @@ const PRIORITY_STYLES = {
   medium: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   high: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   critical: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+const getFileIcon = (type: string) => {
+  if (type.startsWith('image/')) return <ImageIcon size={10} />;
+  if (type === 'application/pdf') return <FileText size={10} />;
+  return <FileIcon size={10} />;
 };
 
 interface TableViewProps {
@@ -193,6 +205,9 @@ export default function TableView({
               Links
             </th>
             <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
+              Files
+            </th>
+            <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
               Checklist
             </th>
             <th className="px-4 py-3 text-right font-medium text-zinc-700 dark:text-zinc-300">
@@ -203,7 +218,7 @@ export default function TableView({
         <tbody>
           {sortedCards.length === 0 ? (
             <tr>
-              <td colSpan={10} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
+              <td colSpan={11} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
                 No cards to display
               </td>
             </tr>
@@ -302,6 +317,31 @@ export default function TableView({
                         {card.links.length > 2 && (
                           <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                             +{card.links.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400 dark:text-zinc-500 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {card.files && card.files.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {card.files.slice(0, 2).map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                          >
+                            {getFileIcon(file.type)} {file.name}
+                          </a>
+                        ))}
+                        {card.files.length > 2 && (
+                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                            +{card.files.length - 2}
                           </span>
                         )}
                       </div>
