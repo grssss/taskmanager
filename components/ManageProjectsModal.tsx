@@ -56,7 +56,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
       className={`flex items-center gap-2 rounded-lg border p-2 ${
         isActive
           ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-          : "border-black/10 bg-white dark:bg-zinc-900 dark:border-white/10"
+          : "border-white/10 bg-zinc-900"
       }`}
     >
       <button
@@ -69,7 +69,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
       <input
         value={project.name}
         onChange={(e) => onRename(project.id, e.target.value)}
-        className="flex-1 rounded-md bg-zinc-100 px-2 py-1 text-sm outline-none dark:bg-zinc-800"
+        className="flex-1 rounded-md bg-zinc-800 px-2 py-1 text-sm outline-none"
       />
       {isActive && (
         <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Active</span>
@@ -80,7 +80,7 @@ function SortableProjectItem({ project, isActive, onRename, onRemove, canDelete 
         className={`rounded-md p-1 ${
           !canDelete
             ? "cursor-not-allowed text-zinc-300 dark:text-zinc-700"
-            : "text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            : "text-red-600 hover:bg-zinc-800"
         }`}
         aria-label="Delete"
         title={!canDelete ? "Cannot delete the last project" : "Delete project"}
@@ -175,13 +175,13 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
         <div className="space-x-2">
           <button
             onClick={onClose}
-            className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10"
+            className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"
+            className="rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100"
           >
             Save
           </button>

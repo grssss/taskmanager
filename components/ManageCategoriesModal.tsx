@@ -39,34 +39,34 @@ export default function ManageCategoriesModal({ open, categories, onSave, onClos
     <Dialog open={open} onClose={onClose} title="Manage Categories" maxWidth="lg">
       <div className="space-y-2">
         {local.map((c) => (
-          <div key={c.id} className="flex items-center gap-2 rounded-lg border border-black/10 bg-white p-2 dark:bg-zinc-900 dark:border-white/10">
+          <div key={c.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 p-2">
             <button
-              className="h-6 w-6 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+              className="h-6 w-6 shrink-0 rounded-full border border-white/10"
               style={{ backgroundColor: c.color || "#64748b" }}
               onClick={() => setPickerFor(pickerFor === c.id ? null : c.id)}
               aria-label="Pick color"
             />
-            <input value={c.name} onChange={(e) => edit(c.id, { name: e.target.value })} className="flex-1 rounded-md bg-zinc-100 px-2 py-1 text-sm outline-none dark:bg-zinc-800" />
-            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
+            <input value={c.name} onChange={(e) => edit(c.id, { name: e.target.value })} className="flex-1 rounded-md bg-zinc-800 px-2 py-1 text-sm outline-none" />
+            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
           </div>
         ))}
         <div className="flex justify-between pt-2">
-          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"><Plus size={16} /> Add Category</button>
+          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100"><Plus size={16} /> Add Category</button>
           <div className="space-x-2">
-            <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
+            <button onClick={onClose} className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm">Cancel</button>
             <button
               onClick={() => {
                 onSave(assignFallbacks(local));
                 onClose();
               }}
-              className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"
+              className="rounded-full bg-zinc-700 px-3 py-2 text-sm text-zinc-100"
             >
               Save
             </button>
           </div>
         </div>
         {pickerFor ? (
-          <div className="rounded-xl border border-black/10 bg-white p-3 dark:bg-zinc-900 dark:border-white/10">
+          <div className="rounded-xl border border-white/10 bg-zinc-900 p-3">
             <HexColorPicker color={local.find((c) => c.id === pickerFor)?.color || "#64748b"} onChange={(v) => edit(pickerFor, { color: v })} />
           </div>
         ) : null}

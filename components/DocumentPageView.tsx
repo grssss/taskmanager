@@ -177,13 +177,13 @@ export default function DocumentPageView({
               }
             }}
             autoFocus
-            className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
+            className="w-full text-4xl font-bold bg-transparent border-none outline-none focus:ring-0 text-zinc-100 placeholder-zinc-400"
             placeholder="Untitled"
           />
         ) : (
           <h1
             onClick={() => setIsEditingTitle(true)}
-            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded px-2 -mx-2 py-1 transition-colors text-zinc-900 dark:text-zinc-100"
+            className="text-4xl font-bold mb-2 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded px-2 -mx-2 py-1 transition-colors text-zinc-100"
           >
             {page.title}
           </h1>
@@ -214,7 +214,7 @@ export default function DocumentPageView({
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Plus size={48} className="text-zinc-300 dark:text-zinc-700 mb-4" />
-            <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+            <p className="text-zinc-400 mb-4">
               This page is empty
             </p>
             <button

@@ -161,6 +161,12 @@ export default function EditableBlock({
       }
     }
 
+    // Allow global shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+S) to bubble up
+    if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "y" || e.key === "s")) {
+      // Don't prevent default - let the global handler in page.tsx handle these
+      return;
+    }
+
     // Text formatting shortcuts
     if ((e.metaKey || e.ctrlKey) && e.key === "b") {
       e.preventDefault();
@@ -296,7 +302,7 @@ export default function EditableBlock({
       case "quote":
         return (
           <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-700 pl-4 py-1 mb-1">
-            <div {...commonProps} className={`${commonProps.className} italic text-zinc-600 dark:text-zinc-400`} />
+            <div {...commonProps} className={`${commonProps.className} italic text-zinc-400`} />
           </blockquote>
         );
 
@@ -369,19 +375,19 @@ export default function EditableBlock({
 
       {/* Slash command menu */}
       {showSlashMenu && filteredSlashItems.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl min-w-[280px] max-h-[300px] overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl min-w-[280px] max-h-[300px] overflow-y-auto">
           {filteredSlashItems.map((item) => (
             <button
               key={item.type}
               onClick={() => handleSlashCommand(item.type)}
-              className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+              className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-zinc-700 transition-colors"
             >
               <span className="text-lg leading-none mt-0.5">{item.icon}</span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                <div className="text-sm font-medium text-zinc-100">
                   {item.label}
                 </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="text-xs text-zinc-400">
                   {item.description}
                 </div>
               </div>

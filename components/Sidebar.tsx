@@ -72,10 +72,10 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col items-center py-4">
+      <div className="w-12 bg-zinc-900 border-r border-white/10 flex flex-col items-center py-4">
         <button
           onClick={onToggleCollapse}
-          className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+          className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
           title="Expand sidebar"
         >
           <ChevronRight size={20} />
@@ -247,13 +247,13 @@ export default function Sidebar({
         />
       )}
 
-      <div className="w-64 bg-zinc-50 dark:bg-zinc-900 border-r border-black/10 dark:border-white/10 flex flex-col h-screen">
+      <div className="w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen">
         {/* Header */}
-        <div className="p-4 border-b border-black/10 dark:border-white/10 relative">
+        <div className="p-4 border-b border-white/10 relative">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
+              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
             >
               <span className="truncate">
                 {activeWorkspace?.icon} {activeWorkspace?.name}
@@ -262,7 +262,7 @@ export default function Sidebar({
             </button>
             <button
               onClick={onToggleCollapse}
-              className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1 rounded hover:bg-zinc-800 transition-colors"
               title="Collapse sidebar"
             >
               <ChevronDown size={16} className="rotate-[-90deg]" />
@@ -271,15 +271,15 @@ export default function Sidebar({
 
           {/* Workspace selector dropdown */}
           {showWorkspaceMenu && (
-            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden">
+            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden">
               {workspaceState.workspaces.map((workspace) => (
                 <button
                   key={workspace.id}
                   onClick={() => handleSwitchWorkspace(workspace.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                     workspace.id === workspaceState.activeWorkspaceId
-                      ? "bg-zinc-100 dark:bg-zinc-700"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                      ? "bg-zinc-700"
+                      : "hover:bg-zinc-700/50"
                   }`}
                 >
                   <span>{workspace.icon}</span>
@@ -300,7 +300,7 @@ export default function Sidebar({
               placeholder="Search pages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/10 bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-white"
             />
           </div>
         </div>
@@ -308,12 +308,12 @@ export default function Sidebar({
         {/* Pages list */}
         <div className="flex-1 overflow-y-auto p-2">
           <div className="flex items-center justify-between mb-2 px-2 relative">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-medium">
+            <span className="text-xs text-zinc-400 uppercase font-medium">
               Pages
             </span>
             <button
               onClick={() => setShowNewPageMenu(!showNewPageMenu)}
-              className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1 rounded hover:bg-zinc-800 transition-colors"
               title="New page"
             >
               <Plus size={14} />
@@ -321,17 +321,17 @@ export default function Sidebar({
 
             {/* New page menu */}
             {showNewPageMenu && (
-              <div className="absolute top-full right-2 mt-1 z-40 border border-black/10 dark:border-white/10 rounded-md bg-white dark:bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
+              <div className="absolute top-full right-2 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
                 <button
                   onClick={() => handleCreatePage("document")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
                 >
                   <FileText size={14} />
                   <span>Document Page</span>
                 </button>
                 <button
                   onClick={() => handleCreatePage("database")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
                 >
                   <Table2 size={14} />
                   <span>Database Page</span>
@@ -373,7 +373,7 @@ export default function Sidebar({
             onClick={() => setContextMenu(null)}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-md shadow-lg py-1 min-w-[160px]"
+            className="fixed z-50 bg-zinc-800 border border-white/10 rounded-md shadow-lg py-1 min-w-[160px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
@@ -381,7 +381,7 @@ export default function Sidebar({
                 handleRenamePage(contextMenu.pageId);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Edit2 size={14} />
               Rename
@@ -390,13 +390,13 @@ export default function Sidebar({
               onClick={() => {
                 setShowSubpageMenu(contextMenu.pageId);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Plus size={14} />
               Add subpage
               <ChevronRight size={14} className="ml-auto" />
             </button>
-            <div className="border-t border-black/10 dark:border-white/10 my-1" />
+            <div className="border-t border-white/10 my-1" />
             <button
               onClick={() => {
                 handleDeletePage(contextMenu.pageId);
@@ -422,7 +422,7 @@ export default function Sidebar({
             }}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
+            className="fixed z-50 bg-zinc-800 border border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
             style={{
               left: contextMenu ? contextMenu.x + 170 : 0,
               top: contextMenu ? contextMenu.y + 30 : 0
@@ -434,7 +434,7 @@ export default function Sidebar({
                 setShowSubpageMenu(null);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <FileText size={14} />
               Document Page
@@ -445,7 +445,7 @@ export default function Sidebar({
                 setShowSubpageMenu(null);
                 setContextMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
             >
               <Table2 size={14} />
               Database Page
@@ -535,8 +535,8 @@ function PageTreeItem({
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
-            ? "bg-black text-white dark:bg-zinc-700 dark:text-zinc-200"
-            : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+            ? "bg-zinc-700 text-zinc-200"
+            : "hover:bg-zinc-800 text-zinc-200"
         } ${isDragging ? "opacity-50" : ""}`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >

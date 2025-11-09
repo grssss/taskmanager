@@ -11,7 +11,8 @@ export function useWorkspaceStorage(): [
   WorkspaceState,
   (value: WorkspaceState | ((prev: WorkspaceState) => WorkspaceState)) => void,
   boolean,
-  { syncing: boolean; error: string | null; lastSynced: Date | null; migrated: boolean }
+  { syncing: boolean; error: string | null; lastSynced: Date | null; migrated: boolean },
+  { undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean; saveNow: () => void }
 ] {
   const { user } = useAuth()
   const [state, setState] = useState<WorkspaceState>(defaultWorkspaceState())
@@ -24,6 +25,11 @@ export function useWorkspaceStorage(): [
   const hasLoadedRef = useRef(false)
   const currentStateRef = useRef<WorkspaceState>(defaultWorkspaceState())
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // History management for undo/redo
+  const historyRef = useRef<WorkspaceState[]>([])
+  const historyIndexRef = useRef(-1)
+  const isUndoRedoRef = useRef(false)
 
   // Load data from Supabase when user logs in
   useEffect(() => {
@@ -274,6 +280,25 @@ export function useWorkspaceStorage(): [
         const newState = typeof value === 'function' ? value(prev) : value
         // Update ref for saves
         currentStateRef.current = newState
+
+        // Add to history if not from undo/redo
+        if (!isUndoRedoRef.current) {
+          // Remove any future history if we're in the middle of the history stack
+          if (historyIndexRef.current < historyRef.current.length - 1) {
+            historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1)
+          }
+          // Add new state to history
+          historyRef.current.push(newState)
+          historyIndexRef.current = historyRef.current.length - 1
+
+          // Limit history to 50 states to prevent memory issues
+          if (historyRef.current.length > 50) {
+            historyRef.current = historyRef.current.slice(-50)
+            historyIndexRef.current = historyRef.current.length - 1
+          }
+        }
+        isUndoRedoRef.current = false
+
         // Trigger debounced save
         triggerDebouncedSave()
         return newState
@@ -282,5 +307,57 @@ export function useWorkspaceStorage(): [
     [triggerDebouncedSave]
   )
 
-  return [state, setStateAndSync, loading, { syncing, error: syncError, lastSynced, migrated }]
+  // Undo function
+  const undo = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      isUndoRedoRef.current = true
+      historyIndexRef.current -= 1
+      const previousState = historyRef.current[historyIndexRef.current]
+      setState(previousState)
+      currentStateRef.current = previousState
+      triggerDebouncedSave()
+    }
+  }, [triggerDebouncedSave])
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      isUndoRedoRef.current = true
+      historyIndexRef.current += 1
+      const nextState = historyRef.current[historyIndexRef.current]
+      setState(nextState)
+      currentStateRef.current = nextState
+      triggerDebouncedSave()
+    }
+  }, [triggerDebouncedSave])
+
+  // Manual save function
+  const saveNow = useCallback(() => {
+    // Clear any pending debounced save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+    // Trigger immediate save
+    saveToSupabase()
+  }, [saveToSupabase])
+
+  // Initialize history when state is first loaded
+  useEffect(() => {
+    if (!loading && historyRef.current.length === 0) {
+      historyRef.current = [state]
+      historyIndexRef.current = 0
+    }
+  }, [loading, state])
+
+  const canUndo = historyIndexRef.current > 0
+  const canRedo = historyIndexRef.current < historyRef.current.length - 1
+
+  return [
+    state,
+    setStateAndSync,
+    loading,
+    { syncing, error: syncError, lastSynced, migrated },
+    { undo, redo, canUndo, canRedo, saveNow }
+  ]
 }
