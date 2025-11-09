@@ -149,7 +149,7 @@ export default function EditableBlock({
     { type: "bulletList" as ContentBlockType, label: "Bullet List", description: "Bulleted list item", icon: "•" },
     { type: "numberedList" as ContentBlockType, label: "Numbered List", description: "Numbered list item", icon: "1." },
     { type: "todoList" as ContentBlockType, label: "Todo List", description: "Checkbox list item", icon: "☐" },
-    { type: "quote" as ContentBlockType, label: "Quote", description: "Blockquote", icon: """ },
+    { type: "quote" as ContentBlockType, label: "Quote", description: "Blockquote", icon: "\"" },
     { type: "code" as ContentBlockType, label: "Code", description: "Code block", icon: "</>" },
     { type: "divider" as ContentBlockType, label: "Divider", description: "Horizontal line", icon: "―" },
   ];
