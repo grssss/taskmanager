@@ -378,7 +378,7 @@ export default function Board() {
         <div className="flex flex-wrap items-center gap-3">
           <label
             htmlFor="project-select"
-            className="text-sm font-medium text-zinc-600 dark:text-zinc-300"
+            className="text-sm font-medium text-slate-600 dark:text-zinc-300"
           >
             Projects
           </label>
@@ -386,7 +386,7 @@ export default function Board() {
             id="project-select"
             value={appState.activeProjectId}
             onChange={(event) => handleSelectProject(event.target.value)}
-            className="h-10 min-w-[200px] rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/30 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40"
+            className="h-10 min-w-[200px] rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:focus:ring-white/40"
           >
             {appState.projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -397,21 +397,21 @@ export default function Board() {
           <button
             type="button"
             onClick={() => setShowProjects(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white"
           >
             <FolderCog size={16} /> Manage Projects
           </button>
           <button
             type="button"
             onClick={handleAddProject}
-            className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white p-2 text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white"
             title="New Project"
           >
             <Plus size={16} />
           </button>
 
           {/* Sync Status Indicator */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
             {syncStatus.syncing ? (
               <>
                 <Loader2 size={16} className="animate-spin text-blue-500" />
@@ -439,13 +439,13 @@ export default function Board() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowCategories(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white"
             >
               <Tags size={16} /> Manage Categories
             </button>
             <button
               onClick={() => setShowColumns(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors hover:text-zinc-900 hover:shadow dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white"
             >
               <SlidersHorizontal size={16} /> Manage Columns
             </button>
@@ -478,12 +478,12 @@ export default function Board() {
             />
           ))}
         </div>
-        <label className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm text-zinc-600 shadow-sm transition hover:border-black/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-white/20">
+        <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:border-zinc-600">
           <input
             type="checkbox"
             checked={showHighPriorityOnly}
             onChange={(event) => setShowHighPriorityOnly(event.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-black focus:ring-black dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:focus:ring-white"
+            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:focus:ring-white/40"
           />
           High priority only
         </label>
@@ -598,10 +598,10 @@ function FilterChip({ label, selected, onClick, color }: FilterChipProps) {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-all ${
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
         selected
-          ? "bg-black text-white shadow dark:bg-white dark:text-black"
-          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          ? "bg-indigo-600 text-white shadow-md dark:bg-indigo-500 dark:text-white"
+          : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:shadow-sm dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
       }`}
       style={selected && color ? { backgroundColor: baseColor, color: "#fff" } : undefined}
     >
