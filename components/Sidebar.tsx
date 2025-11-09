@@ -55,6 +55,7 @@ export default function Sidebar({
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<"before" | "after" | null>(null);
+  const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
 
   const activeWorkspace = workspaceState.workspaces.find(
     (w) => w.id === workspaceState.activeWorkspaceId
@@ -115,13 +116,15 @@ export default function Sidebar({
     }
   };
 
-  const handleRenamePage = (pageId: string) => {
+  const handleRenamePage = (pageId: string, newTitle?: string) => {
     const page = workspaceState.pages[pageId];
-    const newTitle = prompt("New title:", page?.title || "");
-    if (!newTitle || !page) return;
+
+    // If no new title provided, use prompt (for context menu)
+    const title = newTitle !== undefined ? newTitle : prompt("New title:", page?.title || "");
+    if (!title || !page) return;
 
     try {
-      const newState = updatePage(workspaceState, pageId, { title: newTitle });
+      const newState = updatePage(workspaceState, pageId, { title });
       onStateChange(newState);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to rename page");
@@ -358,6 +361,9 @@ export default function Sidebar({
                 draggedPageId={draggedPageId}
                 dropTargetPageId={dropTargetPageId}
                 dropPosition={dropPosition}
+                renamingPageId={renamingPageId}
+                onStartRename={setRenamingPageId}
+                onRename={handleRenamePage}
                 level={0}
               />
             ))}
@@ -472,6 +478,9 @@ interface PageTreeItemProps {
   draggedPageId: string | null;
   dropTargetPageId: string | null;
   dropPosition: "before" | "after" | null;
+  renamingPageId: string | null;
+  onStartRename: (pageId: string | null) => void;
+  onRename: (pageId: string, newTitle: string) => void;
   level: number;
 }
 
@@ -490,18 +499,37 @@ function PageTreeItem({
   draggedPageId,
   dropTargetPageId,
   dropPosition,
+  renamingPageId,
+  onStartRename,
+  onRename,
   level,
 }: PageTreeItemProps) {
+  const [renameValue, setRenameValue] = useState(page.title);
   const children = getPageChildren(pages, page.id);
   const hasChildren = children.length > 0;
   const isActive = page.id === activePageId;
   const isDragging = draggedPageId === page.id;
   const isDropTarget = dropTargetPageId === page.id;
+  const isRenaming = renamingPageId === page.id;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onContextMenu(page.id, e.clientX, e.clientY);
+  };
+
+  const handleRenameSubmit = () => {
+    if (renameValue.trim() && renameValue !== page.title) {
+      onRename(page.id, renameValue.trim());
+    } else {
+      setRenameValue(page.title);
+    }
+    onStartRename(null);
+  };
+
+  const handleRenameCancel = () => {
+    setRenameValue(page.title);
+    onStartRename(null);
   };
 
   return (
@@ -564,10 +592,38 @@ function PageTreeItem({
           )}
         </span>
 
-        <span className="truncate flex-1 text-left">
-          {page.icon && <span className="mr-1">{page.icon}</span>}
-          {page.title}
-        </span>
+        {isRenaming ? (
+          <input
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleRenameSubmit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                handleRenameCancel();
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+            className="flex-1 bg-zinc-800 border border-white/20 rounded px-1 py-0.5 text-sm outline-none focus:ring-1 focus:ring-white/40"
+          />
+        ) : (
+          <span
+            className="truncate flex-1 text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartRename(page.id);
+              setRenameValue(page.title);
+            }}
+          >
+            {page.icon && <span className="mr-1">{page.icon}</span>}
+            {page.title}
+          </span>
+        )}
 
         <span
           onClick={(e) => {
@@ -605,6 +661,9 @@ function PageTreeItem({
               draggedPageId={draggedPageId}
               dropTargetPageId={dropTargetPageId}
               dropPosition={dropPosition}
+              renamingPageId={renamingPageId}
+              onStartRename={onStartRename}
+              onRename={onRename}
               level={level + 1}
             />
           ))}
