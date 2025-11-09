@@ -10,8 +10,12 @@ interface EditableBlockProps {
   onDelete: (blockId: string) => void;
   onCreate: (afterBlockId: string, type: ContentBlockType) => void;
   onMergeWithPrevious: (blockId: string) => void;
+  onMergeWithNext: (blockId: string) => void;
   onTypeChange: (blockId: string, newType: ContentBlockType) => void;
   onFocus?: (blockId: string) => void;
+  shouldFocus?: boolean;
+  previousBlockId?: string;
+  nextBlockId?: string;
   isFirst: boolean;
   isLast: boolean;
 }
@@ -22,14 +26,19 @@ export default function EditableBlock({
   onDelete,
   onCreate,
   onMergeWithPrevious,
+  onMergeWithNext,
   onTypeChange,
   onFocus,
+  shouldFocus = false,
+  previousBlockId,
+  nextBlockId,
   isFirst,
   isLast,
 }: EditableBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
+  const [todoChecked, setTodoChecked] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
 
@@ -50,6 +59,31 @@ export default function EditableBlock({
       }
     }
   }, [isEditing]);
+
+  // Initialize content only when block changes (not on every render)
+  useEffect(() => {
+    if (contentRef.current && contentRef.current.innerText !== content) {
+      contentRef.current.innerText = content;
+    }
+  }, [block.id, content]);
+
+  // Focus block when shouldFocus prop changes to true
+  useEffect(() => {
+    if (shouldFocus && contentRef.current) {
+      contentRef.current.focus();
+      // Move cursor to end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      if (contentRef.current.childNodes.length > 0) {
+        const lastNode = contentRef.current.childNodes[contentRef.current.childNodes.length - 1];
+        const offset = lastNode.textContent?.length || 0;
+        range.setStart(lastNode, offset);
+        range.collapse(true);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }
+  }, [shouldFocus]);
 
   const handleInput = () => {
     if (contentRef.current) {
@@ -97,6 +131,25 @@ export default function EditableBlock({
         // Merge with previous block
         onMergeWithPrevious(block.id);
       }
+    }
+
+    // Handle Delete key at end of block
+    if (e.key === "Delete" && cursorAtEnd && !isLast) {
+      e.preventDefault();
+      // Merge with next block
+      onMergeWithNext(block.id);
+    }
+
+    // Handle ArrowUp - move to previous block
+    if (e.key === "ArrowUp" && cursorAtStart && previousBlockId) {
+      e.preventDefault();
+      onFocus?.(previousBlockId);
+    }
+
+    // Handle ArrowDown - move to next block
+    if (e.key === "ArrowDown" && cursorAtEnd && nextBlockId) {
+      e.preventDefault();
+      onFocus?.(nextBlockId);
     }
 
     // Handle slash menu navigation
@@ -189,9 +242,7 @@ export default function EditableBlock({
           <h1
             {...commonProps}
             className={`${commonProps.className} text-3xl font-bold mb-1 mt-4 first:mt-0`}
-          >
-            {content}
-          </h1>
+          />
         );
 
       case "heading2":
@@ -199,9 +250,7 @@ export default function EditableBlock({
           <h2
             {...commonProps}
             className={`${commonProps.className} text-2xl font-bold mb-1 mt-3 first:mt-0`}
-          >
-            {content}
-          </h2>
+          />
         );
 
       case "heading3":
@@ -209,18 +258,14 @@ export default function EditableBlock({
           <h3
             {...commonProps}
             className={`${commonProps.className} text-xl font-bold mb-1 mt-2 first:mt-0`}
-          >
-            {content}
-          </h3>
+          />
         );
 
       case "bulletList":
         return (
           <div className="flex items-start gap-2 mb-1">
             <span className="text-zinc-500 mt-1.5 select-none">•</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`}>
-              {content}
-            </div>
+            <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
@@ -228,37 +273,30 @@ export default function EditableBlock({
         return (
           <div className="flex items-start gap-2 mb-1">
             <span className="text-zinc-500 mt-1.5 select-none min-w-[1.5rem]">1.</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`}>
-              {content}
-            </div>
+            <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         );
 
       case "todoList":
-        const [checked, setChecked] = useState(false);
         return (
           <div className="flex items-start gap-2 mb-1">
             <button
-              onClick={() => setChecked(!checked)}
+              onClick={() => setTodoChecked(!todoChecked)}
               className="mt-1.5 w-4 h-4 border-2 border-zinc-400 rounded flex items-center justify-center hover:border-zinc-600 transition-colors"
             >
-              {checked && <Check size={12} className="text-zinc-600" />}
+              {todoChecked && <Check size={12} className="text-zinc-600" />}
             </button>
             <div
               {...commonProps}
-              className={`${commonProps.className} flex-1 ${checked ? "line-through text-zinc-400" : ""}`}
-            >
-              {content}
-            </div>
+              className={`${commonProps.className} flex-1 ${todoChecked ? "line-through text-zinc-400" : ""}`}
+            />
           </div>
         );
 
       case "quote":
         return (
           <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-700 pl-4 py-1 mb-1">
-            <div {...commonProps} className={`${commonProps.className} italic text-zinc-600 dark:text-zinc-400`}>
-              {content}
-            </div>
+            <div {...commonProps} className={`${commonProps.className} italic text-zinc-600 dark:text-zinc-400`} />
           </blockquote>
         );
 
@@ -268,9 +306,7 @@ export default function EditableBlock({
             <code
               {...commonProps}
               className={`${commonProps.className} text-sm font-mono text-zinc-800 dark:text-zinc-200 block`}
-            >
-              {content}
-            </code>
+            />
           </pre>
         );
 
@@ -293,9 +329,7 @@ export default function EditableBlock({
 
       default:
         return (
-          <div {...commonProps} className={`${commonProps.className} mb-1`}>
-            {content}
-          </div>
+          <div {...commonProps} className={`${commonProps.className} mb-1`} />
         );
     }
   };
