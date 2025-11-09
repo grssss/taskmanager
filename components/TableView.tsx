@@ -158,9 +158,9 @@ export default function TableView({
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-950">
+    <div className="overflow-x-auto rounded-lg border border-white/10 bg-zinc-950">
       <table className="w-full text-sm">
-        <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-black/10 dark:border-white/10">
+        <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-white/10">
           <tr>
             <th
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"

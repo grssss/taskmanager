@@ -25,9 +25,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh bg-background text-foreground transition-colors`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
+    <html lang="en" suppressHydrationWarning className="dark" style={{ colorScheme: 'dark', backgroundColor: '#0a0a0a', color: '#ededed' }}>
+      <head>
+        <meta name="color-scheme" content="dark" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                  document.documentElement.style.backgroundColor = '#0a0a0a';
+                  document.documentElement.style.color = '#ededed';
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh bg-background text-foreground transition-colors`} style={{ backgroundColor: '#0a0a0a', color: '#ededed' }}>
+        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" enableSystem={false}>
           <AuthProvider>
             <div className="relative min-h-dvh">
               {children}

@@ -30,7 +30,7 @@ export default function WorkspaceDebugPanel({ workspaceState, onFix }: Workspace
   const orphanedPages = pagesArray.filter(p => p.workspaceId !== activeWorkspaceId || (p.parentPageId && !pages[p.parentPageId]))
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-2xl p-4 max-w-2xl max-h-[80vh] overflow-auto z-50">
+    <div className="fixed bottom-4 right-4 bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-2xl p-4 max-w-2xl max-h-[80vh] overflow-auto z-50">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
           🔧 Workspace Debug Panel

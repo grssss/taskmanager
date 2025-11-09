@@ -375,12 +375,12 @@ export default function EditableBlock({
 
       {/* Slash command menu */}
       {showSlashMenu && filteredSlashItems.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl min-w-[280px] max-h-[300px] overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl min-w-[280px] max-h-[300px] overflow-y-auto">
           {filteredSlashItems.map((item) => (
             <button
               key={item.type}
               onClick={() => handleSlashCommand(item.type)}
-              className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+              className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-zinc-700 transition-colors"
             >
               <span className="text-lg leading-none mt-0.5">{item.icon}</span>
               <div className="flex-1 min-w-0">

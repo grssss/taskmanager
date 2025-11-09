@@ -300,7 +300,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                     ))}
                   </select>
                 )}
-                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
+                <button type="button" onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))} className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-800" aria-label="Remove link"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
@@ -324,12 +324,12 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
             </label>
           </div>
           {uploadError && (
-            <div className="mb-2 rounded-md bg-red-100 px-3 py-2 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            <div className="mb-2 rounded-md bg-red-900/20 px-3 py-2 text-xs text-red-400">
               {uploadError}
             </div>
           )}
           {uploading && (
-            <div className="mb-2 rounded-md bg-blue-100 px-3 py-2 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+            <div className="mb-2 rounded-md bg-blue-900/20 px-3 py-2 text-xs text-blue-400">
               Uploading...
             </div>
           )}
@@ -355,7 +355,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
                 <button
                   type="button"
                   onClick={() => handleFileDelete(file)}
-                  className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
+                  className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-700"
                   aria-label="Remove file"
                 >
                   <Trash2 size={16} />
@@ -366,7 +366,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
+          <button onClick={onClose} className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm">Cancel</button>
           <button
             disabled={!valid}
             onClick={() =>
@@ -426,7 +426,7 @@ function SortableChecklistItem({ item, index, onCheck, onTextChange, onDelete }:
       <button
         type="button"
         onClick={onDelete}
-        className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-700"
+        className="shrink-0 rounded-md p-0.5 text-red-600 hover:bg-zinc-700"
         aria-label="Remove checklist item"
       >
         <Trash2 size={14} />

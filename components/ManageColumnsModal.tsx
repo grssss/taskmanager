@@ -37,16 +37,16 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
         {local.map((c, i) => (
           <div key={c.id} className="flex items-center gap-2 rounded-lg border border-black/10 bg-white p-2 dark:bg-zinc-900 dark:border-white/10">
             <input value={c.name} onChange={(e) => rename(c.id, e.target.value)} className="flex-1 rounded-md bg-zinc-100 px-2 py-1 text-sm outline-none dark:bg-zinc-800" />
-            <button onClick={() => move(i, -1)} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Up"><ArrowUpZA size={16} /></button>
-            <button onClick={() => move(i, 1)} className="rounded-md p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Down"><ArrowDownAZ size={16} /></button>
-            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
+            <button onClick={() => move(i, -1)} className="rounded-md p-1 hover:bg-zinc-800" aria-label="Up"><ArrowUpZA size={16} /></button>
+            <button onClick={() => move(i, 1)} className="rounded-md p-1 hover:bg-zinc-800" aria-label="Down"><ArrowDownAZ size={16} /></button>
+            <button onClick={() => remove(c.id)} className="rounded-md p-1 text-red-600 hover:bg-zinc-800" aria-label="Remove"><X size={16} /></button>
           </div>
         ))}
         <div className="flex justify-between pt-2">
-          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black"><Plus size={16} /> Add Column</button>
+          <button onClick={add} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm text-black"><Plus size={16} /> Add Column</button>
           <div className="space-x-2">
-            <button onClick={onClose} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm dark:bg-zinc-900 dark:border-white/10">Cancel</button>
-            <button onClick={() => { onSave(local.map((c) => ({ ...c, id: slug(c.name) }))); onClose(); }} className="rounded-full bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black">Save</button>
+            <button onClick={onClose} className="rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm">Cancel</button>
+            <button onClick={() => { onSave(local.map((c) => ({ ...c, id: slug(c.name) }))); onClose(); }} className="rounded-full bg-white px-3 py-2 text-sm text-black">Save</button>
           </div>
         </div>
       </div>

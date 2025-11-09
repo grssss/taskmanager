@@ -21,7 +21,7 @@ export default function PageCanvas({
 
   if (!activePageId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex-1 flex items-center justify-center bg-zinc-950">
         <div className="text-center">
           <p className="text-zinc-500 dark:text-zinc-400 mb-4">
             No page selected
@@ -38,7 +38,7 @@ export default function PageCanvas({
 
   if (!activePage) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex-1 flex items-center justify-center bg-zinc-950">
         <div className="text-center">
           <p className="text-red-500 mb-2">Page not found</p>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -55,9 +55,9 @@ export default function PageCanvas({
   );
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-zinc-950 overflow-hidden">
       {/* Breadcrumb */}
-      <div className="border-b border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-zinc-950 px-6 py-3">
+      <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
           {breadcrumbs.length === 0 && (
             <span className="text-zinc-400 dark:text-zinc-500">Workspace</span>
@@ -78,7 +78,7 @@ export default function PageCanvas({
           <select
             value={activePageId}
             onChange={(e) => onPageSelect(e.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-zinc-700 shadow-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-white/30"
+            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-white/30"
           >
             {workspacePages.map((page) => (
               <option key={page.id} value={page.id}>
