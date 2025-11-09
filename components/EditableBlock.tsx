@@ -66,7 +66,13 @@ export default function EditableBlock({
 
   // Detect mobile device on mount
   useEffect(() => {
-    setIsMobile(isMobileDevice());
+    const mobile = isMobileDevice();
+    console.log('[EditableBlock] Mobile detection:', {
+      isMobile: mobile,
+      userAgent: navigator.userAgent,
+      hasPointerFine: window.matchMedia('(pointer: fine)').matches
+    });
+    setIsMobile(mobile);
   }, []);
 
   // Focus on the block when editing starts
@@ -116,11 +122,18 @@ export default function EditableBlock({
     if (contentRef.current) {
       const newContent = contentRef.current.innerText;
 
+      // Debug logging
+      console.log('[EditableBlock] Input:', { newContent, isMobile, startsWithSlash: newContent.startsWith("/"), length: newContent.length });
+
       // Only enable slash commands on desktop (not on mobile devices)
-      if (!isMobile && newContent.startsWith("/") && newContent.length > 1) {
+      if (!isMobile && newContent.startsWith("/")) {
         setShowSlashMenu(true);
         setSlashMenuQuery(newContent.slice(1).toLowerCase());
+        console.log('[EditableBlock] Showing slash menu with query:', newContent.slice(1).toLowerCase());
       } else {
+        if (showSlashMenu) {
+          console.log('[EditableBlock] Hiding slash menu');
+        }
         setShowSlashMenu(false);
         setSlashMenuQuery("");
       }
