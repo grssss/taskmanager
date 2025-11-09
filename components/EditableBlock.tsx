@@ -67,6 +67,7 @@ export default function EditableBlock({
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const toggleContentRef = useRef<HTMLDivElement>(null);
   const content = typeof block.content === "string" ? block.content : "";
 
   // Get todo checked state from metadata
@@ -111,15 +112,26 @@ export default function EditableBlock({
     if (isEditing && contentRef.current) {
       contentRef.current.focus();
       // Move cursor to end
-      const range = document.createRange();
-      const sel = window.getSelection();
-      if (contentRef.current.childNodes.length > 0) {
-        const lastNode = contentRef.current.childNodes[contentRef.current.childNodes.length - 1];
-        const offset = lastNode.textContent?.length || 0;
-        range.setStart(lastNode, offset);
-        range.collapse(true);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+      try {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (contentRef.current.childNodes.length > 0) {
+          const lastNode = contentRef.current.childNodes[contentRef.current.childNodes.length - 1];
+          // Check if lastNode is a text node
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            const offset = Math.min(lastNode.textContent?.length || 0, lastNode.textContent?.length || 0);
+            range.setStart(lastNode, offset);
+          } else {
+            // If not a text node, set range at the end of the element
+            range.selectNodeContents(contentRef.current);
+            range.collapse(false);
+          }
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      } catch (e) {
+        // Silently catch any range errors
+        console.warn('Error setting cursor position:', e);
       }
     }
   }, [isEditing]);
@@ -136,15 +148,26 @@ export default function EditableBlock({
     if (shouldFocus && contentRef.current) {
       contentRef.current.focus();
       // Move cursor to end
-      const range = document.createRange();
-      const sel = window.getSelection();
-      if (contentRef.current.childNodes.length > 0) {
-        const lastNode = contentRef.current.childNodes[contentRef.current.childNodes.length - 1];
-        const offset = lastNode.textContent?.length || 0;
-        range.setStart(lastNode, offset);
-        range.collapse(true);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+      try {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (contentRef.current.childNodes.length > 0) {
+          const lastNode = contentRef.current.childNodes[contentRef.current.childNodes.length - 1];
+          // Check if lastNode is a text node
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            const offset = Math.min(lastNode.textContent?.length || 0, lastNode.textContent?.length || 0);
+            range.setStart(lastNode, offset);
+          } else {
+            // If not a text node, set range at the end of the element
+            range.selectNodeContents(contentRef.current);
+            range.collapse(false);
+          }
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      } catch (e) {
+        // Silently catch any range errors
+        console.warn('Error setting cursor position:', e);
       }
     }
   }, [shouldFocus]);
@@ -180,13 +203,15 @@ export default function EditableBlock({
 
     // Handle Enter key
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-
+      // If slash menu is open, don't handle Enter here - let the menu handle it
       if (showSlashMenu) {
-        // If slash menu is open, close it
-        setShowSlashMenu(false);
+        // The slash menu will handle the selection and call handleSlashCommand
+        // We just need to prevent the default behavior and return
+        e.preventDefault();
         return;
       }
+
+      e.preventDefault();
 
       // Notion-style list behavior
       const isListType = ["bulletList", "numberedList", "todoList", "toggleList"].includes(block.type);
@@ -308,6 +333,13 @@ export default function EditableBlock({
     onTypeChange(block.id, type);
     setShowSlashMenu(false);
     setSlashMenuQuery("");
+
+    // Focus back on the content after a brief delay to allow the type change to complete
+    setTimeout(() => {
+      if (contentRef.current) {
+        contentRef.current.focus();
+      }
+    }, 0);
   };
 
   // Render block based on type
@@ -430,9 +462,12 @@ export default function EditableBlock({
         );
 
       case "toggleList":
+        // Get toggle content from metadata
+        const toggleContent = (block.metadata?.toggleContent as string) || "";
+
         return (
           <div className="mb-1" style={{ marginLeft: `${indentLevel * 1.5}rem` }}>
-            <div className="flex items-baseline gap-1.5">
+            <div className="flex items-start gap-1.5 group/toggle">
               <button
                 onClick={() => {
                   if (onMetadataUpdate) {
@@ -442,20 +477,58 @@ export default function EditableBlock({
                     });
                   }
                 }}
-                className={`text-zinc-500 hover:text-zinc-300 transition-all duration-200 flex-shrink-0 ${
+                className={`text-zinc-500 hover:text-zinc-300 transition-all duration-200 flex-shrink-0 mt-1 ${
                   toggleCollapsed ? "" : "rotate-90"
                 }`}
                 style={{ transformOrigin: "center" }}
               >
                 ▶
               </button>
-              <div {...commonProps} className={`${commonProps.className} flex-1 font-medium`} />
-            </div>
-            {!toggleCollapsed && (
-              <div className="ml-6 mt-1 text-zinc-500 text-sm italic">
-                Toggle content area (child blocks feature coming soon)
+              <div className="flex-1">
+                {/* Toggle header */}
+                <div {...commonProps} className={`${commonProps.className} font-medium`} />
+
+                {/* Toggle content area */}
+                {!toggleCollapsed && (
+                  <div className="ml-0 mt-2 pl-4 border-l-2 border-zinc-800">
+                    <div
+                      ref={toggleContentRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onInput={(e) => {
+                        if (onMetadataUpdate) {
+                          onMetadataUpdate(block.id, {
+                            ...block.metadata,
+                            toggleContent: e.currentTarget.innerText
+                          });
+                        }
+                      }}
+                      onFocus={() => {
+                        // Move cursor to end when focusing
+                        setTimeout(() => {
+                          if (toggleContentRef.current) {
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            range.selectNodeContents(toggleContentRef.current);
+                            range.collapse(false);
+                            sel?.removeAllRanges();
+                            sel?.addRange(range);
+                          }
+                        }, 0);
+                      }}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const text = e.clipboardData.getData("text/plain");
+                        document.execCommand("insertText", false, text);
+                      }}
+                      className="outline-none text-sm text-zinc-300 p-2 rounded hover:bg-zinc-900/30 focus:bg-zinc-900/50 transition-colors empty:before:content-[attr(data-placeholder)] empty:before:text-zinc-600"
+                      data-placeholder="Add content inside toggle..."
+                      dangerouslySetInnerHTML={{ __html: toggleContent }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         );
 
@@ -520,14 +593,141 @@ export default function EditableBlock({
         );
 
       case "table":
+        // Get table data from metadata or create default
+        const tableData = (block.metadata?.tableData as string[][]) || [
+          ["", ""],
+          ["", ""]
+        ];
+        const hasHeaders = (block.metadata?.hasHeaders as boolean) ?? true;
+
+        const updateTableCell = (rowIndex: number, colIndex: number, value: string) => {
+          if (onMetadataUpdate) {
+            const newTableData = tableData.map((row, ri) =>
+              ri === rowIndex
+                ? row.map((cell, ci) => (ci === colIndex ? value : cell))
+                : row
+            );
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              tableData: newTableData
+            });
+          }
+        };
+
+        const addRow = () => {
+          if (onMetadataUpdate) {
+            const newRow = Array(tableData[0]?.length || 2).fill("");
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              tableData: [...tableData, newRow]
+            });
+          }
+        };
+
+        const addColumn = () => {
+          if (onMetadataUpdate) {
+            const newTableData = tableData.map(row => [...row, ""]);
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              tableData: newTableData
+            });
+          }
+        };
+
+        const deleteRow = (rowIndex: number) => {
+          if (onMetadataUpdate && tableData.length > 1) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              tableData: tableData.filter((_, i) => i !== rowIndex)
+            });
+          }
+        };
+
+        const deleteColumn = (colIndex: number) => {
+          if (onMetadataUpdate && tableData[0].length > 1) {
+            onMetadataUpdate(block.id, {
+              ...block.metadata,
+              tableData: tableData.map(row => row.filter((_, i) => i !== colIndex))
+            });
+          }
+        };
+
         return (
-          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden">
-            <div className="p-4 text-center text-zinc-500">
-              <div className="text-sm mb-2">📊 Table Block</div>
-              <div
-                {...commonProps}
-                className={`${commonProps.className} text-xs`}
-              />
+          <div className="my-2 relative group/table">
+            <div className="overflow-x-auto overflow-y-visible border border-zinc-700 rounded-lg scrollbar-hide">
+              <table className="w-full border-collapse">
+                <tbody>
+                  {tableData.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="group/row relative">
+                      {row.map((cell, colIndex) => {
+                        const isHeaderRow = hasHeaders && rowIndex === 0;
+                        const CellTag = isHeaderRow ? "th" : "td";
+                        const isLastRow = rowIndex === tableData.length - 1;
+                        const isLastCol = colIndex === row.length - 1;
+
+                        return (
+                          <CellTag
+                            key={colIndex}
+                            className={`border border-zinc-700 p-2 min-w-[100px] relative group/cell ${
+                              isHeaderRow ? "bg-zinc-800 font-semibold" : "bg-zinc-900/50"
+                            }`}
+                          >
+                            <input
+                              type="text"
+                              value={cell}
+                              onChange={(e) => updateTableCell(rowIndex, colIndex, e.target.value)}
+                              className="w-full bg-transparent text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-blue-500 px-1 py-0.5 rounded"
+                              placeholder={isHeaderRow ? "Header" : "Cell"}
+                            />
+                          </CellTag>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {/* Add/Remove row buttons - center of bottom border */}
+                  <tr>
+                    <td colSpan={tableData[0]?.length || 2} className="border-none p-0 relative h-0">
+                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 opacity-0 group-hover/table:opacity-100 flex gap-1">
+                        <button
+                          onClick={addRow}
+                          className="bg-zinc-700 text-zinc-300 text-xs w-4 h-4 flex items-center justify-center rounded hover:bg-zinc-600 transition-all"
+                          title="Add row"
+                        >
+                          +
+                        </button>
+                        {tableData.length > 1 && (
+                          <button
+                            onClick={() => deleteRow(tableData.length - 1)}
+                            className="bg-zinc-700 text-zinc-300 text-xs w-4 h-4 flex items-center justify-center rounded hover:bg-zinc-600 transition-all"
+                            title="Remove row"
+                          >
+                            -
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              {/* Add/Remove column buttons - center of right border */}
+              <div className="absolute top-1/2 -translate-y-1/2 -right-2 opacity-0 group-hover/table:opacity-100 flex flex-col gap-1">
+                <button
+                  onClick={addColumn}
+                  className="bg-zinc-700 text-zinc-300 text-xs w-4 h-4 flex items-center justify-center rounded hover:bg-zinc-600 transition-all"
+                  title="Add column"
+                >
+                  +
+                </button>
+                {tableData[0]?.length > 1 && (
+                  <button
+                    onClick={() => deleteColumn(tableData[0].length - 1)}
+                    className="bg-zinc-700 text-zinc-300 text-xs w-4 h-4 flex items-center justify-center rounded hover:bg-zinc-600 transition-all"
+                    title="Remove column"
+                  >
+                    -
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         );
