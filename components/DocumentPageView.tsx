@@ -100,6 +100,39 @@ export default function DocumentPageView({
 
       const newState = updatePage(workspaceState, page.id, { content: updatedContent });
       onStateChange(newState);
+
+      // Focus the previous block after merge
+      setTimeout(() => setFocusedBlockId(previousBlock.id), 10);
+    }
+  };
+
+  const handleBlockMergeWithNext = (blockId: string) => {
+    const currentContent = page.content || [];
+    const blockIndex = currentContent.findIndex((b) => b.id === blockId);
+
+    if (blockIndex < currentContent.length - 1) {
+      const currentBlock = currentContent[blockIndex];
+      const nextBlock = currentContent[blockIndex + 1];
+
+      // Merge next block's content into current block
+      const mergedContent =
+        (typeof currentBlock.content === "string" ? currentBlock.content : "") +
+        (typeof nextBlock.content === "string" ? nextBlock.content : "");
+
+      const updatedContent = currentContent
+        .map((block, index) => {
+          if (index === blockIndex) {
+            return { ...block, content: mergedContent, updatedAt: new Date().toISOString() };
+          }
+          return block;
+        })
+        .filter((_, index) => index !== blockIndex + 1);
+
+      const newState = updatePage(workspaceState, page.id, { content: updatedContent });
+      onStateChange(newState);
+
+      // Keep focus on current block after merge
+      setTimeout(() => setFocusedBlockId(currentBlock.id), 10);
     }
   };
 
@@ -168,8 +201,12 @@ export default function DocumentPageView({
               onDelete={handleBlockDelete}
               onCreate={handleBlockCreate}
               onMergeWithPrevious={handleBlockMerge}
+              onMergeWithNext={handleBlockMergeWithNext}
               onTypeChange={handleBlockTypeChange}
               onFocus={setFocusedBlockId}
+              shouldFocus={focusedBlockId === block.id}
+              previousBlockId={index > 0 ? page.content[index - 1].id : undefined}
+              nextBlockId={index < page.content.length - 1 ? page.content[index + 1].id : undefined}
               isFirst={index === 0}
               isLast={index === page.content.length - 1}
             />
