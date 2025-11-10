@@ -582,7 +582,7 @@ function PageTreeItem({
       {isDropTarget && dropPosition === "before" && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
       )}
-      <button
+      <div
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
@@ -605,12 +605,20 @@ function PageTreeItem({
           onDragEnd();
         }}
         onClick={() => onSelect(page.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(page.id);
+          }
+        }}
         onContextMenu={handleContextMenu}
         className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors group ${
           isActive
             ? "bg-zinc-700 text-zinc-200"
             : "hover:bg-zinc-800 text-zinc-200"
         } ${isDragging ? "opacity-50" : ""}`}
+        role="button"
+        tabIndex={0}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
         {hasChildren && (
@@ -674,7 +682,7 @@ function PageTreeItem({
         >
           <MoreHorizontal size={14} />
         </span>
-      </button>
+      </div>
       {isDropTarget && dropPosition === "after" && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
       )}
