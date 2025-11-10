@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 
 export async function POST(request: Request) {
   try {
@@ -17,25 +14,27 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create a Supabase client for this request
-    const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+    const supabase = createServerSupabaseClient()
 
-    // Prepare update data
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
+    const now = new Date().toISOString()
+    const updateData: Database['public']['Tables']['user_data']['Update'] = {
+      updated_at: now,
     }
 
-    // Support both old appState and new workspaceState
     if (workspaceState) {
       updateData.workspace_state = workspaceState
       updateData.schema_version = 2
+      updateData.app_state = appState ?? workspaceState
+      if (appState) {
+        updateData.state_backup = appState
+      }
+      updateData.migrated_at = now
     } else if (appState) {
       updateData.app_state = appState
-      updateData.schema_version = 1
+      updateData.schema_version = updateData.schema_version ?? 1
     }
 
-    // Update the user's data
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('user_data')
       .update(updateData)
       .eq('user_id', userId)

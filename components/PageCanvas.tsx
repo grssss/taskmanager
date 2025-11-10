@@ -5,7 +5,7 @@ import { getPagePath } from "@/lib/types";
 import DatabasePageView from "./DatabasePageView";
 import DocumentPageView from "./DocumentPageView";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 
 interface PageCanvasProps {
   workspaceState: WorkspaceState;
@@ -13,6 +13,7 @@ interface PageCanvasProps {
   onPageSelect: (pageId: string) => void;
   onBackClick?: () => void;
   onEditingChange?: (isEditing: boolean) => void;
+  workspaceSwitcherSlot?: ReactNode;
 }
 
 export default function PageCanvas({
@@ -21,6 +22,7 @@ export default function PageCanvas({
   onPageSelect,
   onBackClick,
   onEditingChange,
+  workspaceSwitcherSlot,
 }: PageCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -68,9 +70,6 @@ export default function PageCanvas({
   }
 
   const breadcrumbs = getPagePath(pages, activePageId);
-  const workspacePages = Object.values(pages).filter(
-    (page) => page.workspaceId === workspaceState.activeWorkspaceId
-  );
 
   const isDocument = isDocumentPage(activePage);
   const hideChromeOnMobile = isMobile && isDocument;
@@ -80,44 +79,45 @@ export default function PageCanvas({
       {/* Breadcrumb */}
       {!hideChromeOnMobile && (
         <div className="border-b border-white/10 bg-zinc-950 px-6 py-3">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
-            {/* Mobile back button */}
-            {isMobile && onBackClick && (
-              <button
-                onClick={onBackClick}
-                className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100 transition-colors mr-2"
-              >
-                <ArrowLeft size={18} />
-              </button>
-            )}
-            {breadcrumbs.length === 0 && (
-              <span className="text-zinc-500">Workspace</span>
-            )}
-            {breadcrumbs.slice(0, -1).map((page, index) => (
-              <div key={page.id} className="flex items-center gap-2">
-                {index > 0 && <ChevronRight size={14} />}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+              {/* Mobile back button */}
+              {isMobile && onBackClick && (
                 <button
-                  onClick={() => onPageSelect(page.id)}
-                  className="hover:text-zinc-100 transition-colors"
+                  onClick={onBackClick}
+                  className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100 transition-colors mr-2"
                 >
-                  {page.icon && <span className="mr-1">{page.icon}</span>}
-                  {page.title}
+                  <ArrowLeft size={18} />
                 </button>
-              </div>
-            ))}
-            {breadcrumbs.length > 1 && <ChevronRight size={14} />}
-            <select
-              value={activePageId}
-              onChange={(e) => onPageSelect(e.target.value)}
-              className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-white/30"
-            >
-              {workspacePages.map((page) => (
-                <option key={page.id} value={page.id}>
-                  {page.icon ? `${page.icon} ` : ""}
-                  {page.title || "Untitled"}
-                </option>
+              )}
+              {breadcrumbs.length === 0 && (
+                <span className="text-zinc-500">Workspace</span>
+              )}
+              {breadcrumbs.slice(0, -1).map((page, index) => (
+                <div key={page.id} className="flex items-center gap-2">
+                  {index > 0 && <ChevronRight size={14} />}
+                  <button
+                    onClick={() => onPageSelect(page.id)}
+                    className="hover:text-zinc-100 transition-colors"
+                  >
+                    {page.icon && <span className="mr-1">{page.icon}</span>}
+                    {page.title}
+                  </button>
+                </div>
               ))}
-            </select>
+              {breadcrumbs.length > 0 && (
+                <div className="flex items-center gap-2 text-zinc-100 font-medium truncate">
+                  {breadcrumbs.length > 1 && <ChevronRight size={14} />}
+                  <span className="truncate">
+                    {activePage.icon && <span className="mr-1">{activePage.icon}</span>}
+                    {activePage.title || "Untitled"}
+                  </span>
+                </div>
+              )}
+            </div>
+            {!isMobile && workspaceSwitcherSlot && (
+              <div className="shrink-0">{workspaceSwitcherSlot}</div>
+            )}
           </div>
         </div>
       )}

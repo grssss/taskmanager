@@ -16,7 +16,10 @@ export default function ManageColumnsModal({ open, columns, onSave, onClose }: P
   const [local, setLocal] = useState<Column[]>(columns);
   useEffect(() => {
     if (!open) return;
-    setLocal(columns);
+    const frame = requestAnimationFrame(() => {
+      setLocal(columns);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [columns, open]);
 
   const add = () => setLocal((l) => [...l, { id: slug(`Column ${l.length + 1}`), name: `Column ${l.length + 1}`, cardIds: [] }]);

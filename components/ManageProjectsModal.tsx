@@ -104,8 +104,11 @@ export default function ManageProjectsModal({ open, projects, activeProjectId, o
 
   useEffect(() => {
     if (!open) return;
-    setLocal(projects);
-    setLocalActiveId(activeProjectId);
+    const frame = requestAnimationFrame(() => {
+      setLocal(projects);
+      setLocalActiveId(activeProjectId);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [projects, activeProjectId, open]);
 
   const remove = (id: string) => {

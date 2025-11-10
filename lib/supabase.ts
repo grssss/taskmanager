@@ -1,8 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const isProduction = process.env.NODE_ENV === 'production'
+
+// Prefer explicit production creds when building prod bundle, otherwise fall back to local defaults.
+const supabaseUrl = isProduction
+  ? process.env.PROD_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  : process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.PROD_SUPABASE_URL
+
+const supabaseAnonKey = isProduction
+  ? process.env.PROD_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.PROD_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.')

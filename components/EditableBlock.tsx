@@ -32,7 +32,10 @@ function isMobileDevice(): boolean {
   if (typeof window === "undefined") return false;
 
   // Check user agent for mobile indicators
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const userAgent =
+    navigator.userAgent ||
+    navigator.vendor ||
+    ((window as Window & { opera?: string }).opera ?? "");
   const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
 
   // Also check for touch-only devices (no mouse)
@@ -98,13 +101,16 @@ export default function EditableBlock({
 
   // Detect mobile device on mount
   useEffect(() => {
-    const mobile = isMobileDevice();
-    console.log('[EditableBlock] Mobile detection:', {
-      isMobile: mobile,
-      userAgent: navigator.userAgent,
-      hasPointerFine: window.matchMedia('(pointer: fine)').matches
+    const frame = requestAnimationFrame(() => {
+      const mobile = isMobileDevice();
+      console.log('[EditableBlock] Mobile detection:', {
+        isMobile: mobile,
+        userAgent: navigator.userAgent,
+        hasPointerFine: window.matchMedia('(pointer: fine)').matches
+      });
+      setIsMobile(mobile);
     });
-    setIsMobile(mobile);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // Focus on the block when editing starts

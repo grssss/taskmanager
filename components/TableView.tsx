@@ -9,6 +9,21 @@ import Link from "next/link";
 type SortField = "title" | "status" | "priority" | "dueDate" | "createdAt" | "column";
 type SortDirection = "asc" | "desc";
 
+interface SortIconProps {
+  field: SortField;
+  activeField: SortField;
+  direction: SortDirection;
+}
+
+function SortIcon({ field, activeField, direction }: SortIconProps) {
+  if (activeField !== field) return null;
+  return direction === "asc" ? (
+    <ArrowUp size={14} className="inline ml-1" />
+  ) : (
+    <ArrowDown size={14} className="inline ml-1" />
+  );
+}
+
 const PRIORITY_ORDER = { low: 0, medium: 1, high: 2, critical: 3 };
 const PRIORITY_LABELS = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
 const PRIORITY_STYLES = {
@@ -133,15 +148,6 @@ export default function TableView({
     }
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === "asc" ? (
-      <ArrowUp size={14} className="inline ml-1" />
-    ) : (
-      <ArrowDown size={14} className="inline ml-1" />
-    );
-  };
-
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     if (isToday(date)) return "Today";
@@ -166,19 +172,19 @@ export default function TableView({
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("title")}
             >
-              Title <SortIcon field="title" />
+              Title <SortIcon field="title" activeField={sortField} direction={sortDirection} />
             </th>
             <th
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("column")}
             >
-              Column <SortIcon field="column" />
+              Column <SortIcon field="column" activeField={sortField} direction={sortDirection} />
             </th>
             <th
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("status")}
             >
-              Status <SortIcon field="status" />
+              Status <SortIcon field="status" activeField={sortField} direction={sortDirection} />
             </th>
             <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
               Categories
@@ -187,19 +193,19 @@ export default function TableView({
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("priority")}
             >
-              Priority <SortIcon field="priority" />
+              Priority <SortIcon field="priority" activeField={sortField} direction={sortDirection} />
             </th>
             <th
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("dueDate")}
             >
-              Due Date <SortIcon field="dueDate" />
+              Due Date <SortIcon field="dueDate" activeField={sortField} direction={sortDirection} />
             </th>
             <th
               className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               onClick={() => handleSort("createdAt")}
             >
-              Created <SortIcon field="createdAt" />
+              Created <SortIcon field="createdAt" activeField={sortField} direction={sortDirection} />
             </th>
             <th className="px-4 py-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
               Links

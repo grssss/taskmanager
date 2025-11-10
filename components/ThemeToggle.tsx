@@ -7,7 +7,10 @@ import { useEffect, useState } from "react";
 export default function ThemeToggle() {
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   if (!mounted) return null;
 
   const current = theme === "system" ? systemTheme : theme;
@@ -24,4 +27,3 @@ export default function ThemeToggle() {
     </button>
   );
 }
-

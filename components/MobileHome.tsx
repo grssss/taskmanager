@@ -43,7 +43,6 @@ export default function MobileHome({
                 </div>
                 <div className="w-full">
                   <p className="text-sm font-medium text-zinc-100 truncate">
-                    {page.icon && <span className="mr-1">{page.icon}</span>}
                     {page.title}
                   </p>
                 </div>
@@ -77,7 +76,6 @@ export default function MobileHome({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-zinc-100 truncate">
-                  {page.icon && <span className="mr-1">{page.icon}</span>}
                   {page.title}
                 </p>
               </div>

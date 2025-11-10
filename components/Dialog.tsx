@@ -23,14 +23,19 @@ export default function Dialog({
 
   // Handle animation timing
   useEffect(() => {
+    let frame: number | null = null;
     if (open) {
-      // Small delay to trigger animation
-      requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
         setIsVisible(true);
       });
     } else {
-      setIsVisible(false);
+      frame = requestAnimationFrame(() => {
+        setIsVisible(false);
+      });
     }
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [open]);
 
   // Prevent body scroll when dialog is open

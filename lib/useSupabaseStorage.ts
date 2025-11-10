@@ -4,6 +4,10 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from './AuthContext'
 import { AppState } from './types'
+import type { Database } from './database.types'
+
+type UserDataInsert = Database['public']['Tables']['user_data']['Insert']
+type UserDataUpdate = Database['public']['Tables']['user_data']['Update']
 
 export function useSupabaseStorage<T extends AppState>(
   key: string,
@@ -60,12 +64,13 @@ export function useSupabaseStorage<T extends AppState>(
                 const parsed = JSON.parse(localData)
                 // Migrate data from localStorage to Supabase
                 console.log('Migrating data from localStorage to Supabase...')
+                const insertPayload: UserDataInsert = {
+                  user_id: user.id,
+                  app_state: parsed as unknown as Database['public']['Tables']['user_data']['Insert']['app_state'],
+                }
                 const { error: insertError } = await supabase
                   .from('user_data')
-                  .insert({
-                    user_id: user.id,
-                    app_state: parsed,
-                  } as any)
+                  .insert(insertPayload)
 
                 if (insertError) {
                   console.error('Failed to insert data:', insertError)
@@ -83,12 +88,13 @@ export function useSupabaseStorage<T extends AppState>(
             } else {
               // No local data either, insert initial value
               console.log('Creating new user data record...')
+              const insertPayload: UserDataInsert = {
+                user_id: user.id,
+                app_state: initialValue as unknown as Database['public']['Tables']['user_data']['Insert']['app_state'],
+              }
               const { error: insertError } = await supabase
                 .from('user_data')
-                .insert({
-                  user_id: user.id,
-                  app_state: initialValue,
-                } as any)
+                .insert(insertPayload)
 
               if (insertError) {
                 console.error('Failed to create initial data:', insertError)
@@ -102,7 +108,7 @@ export function useSupabaseStorage<T extends AppState>(
           }
         } else if (data && isMountedRef.current) {
           // Successfully loaded from Supabase - clear any old localStorage data
-          const loadedData = (data as any).app_state as T
+          const loadedData = (data?.app_state as T) ?? initialValue
           setState(loadedData)
           currentStateRef.current = loadedData
           localStorage.removeItem(key)
@@ -135,12 +141,13 @@ export function useSupabaseStorage<T extends AppState>(
       setSyncError(null)
 
       try {
-        const { error } = await (supabase as any)
+        const updatePayload: UserDataUpdate = {
+          app_state: dataToSave as unknown as Database['public']['Tables']['user_data']['Update']['app_state'],
+          updated_at: new Date().toISOString(),
+        }
+        const { error } = await supabase
           .from('user_data')
-          .update({
-            app_state: dataToSave,
-            updated_at: new Date().toISOString(),
-          } as any)
+          .update(updatePayload)
           .eq('user_id', user.id)
 
         if (error) {

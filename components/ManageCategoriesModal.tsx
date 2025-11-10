@@ -18,8 +18,11 @@ export default function ManageCategoriesModal({ open, categories, onSave, onClos
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   useEffect(() => {
     if (!open) return;
-    setLocal(categories);
-    setPickerFor(null);
+    const frame = requestAnimationFrame(() => {
+      setLocal(categories);
+      setPickerFor(null);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [categories, open]);
 
   const add = () =>

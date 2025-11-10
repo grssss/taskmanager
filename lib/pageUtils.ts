@@ -38,7 +38,6 @@ export function createPage(
     workspaceId,
     parentPageId,
     title,
-    icon: type === "database" ? "📊" : "📄",
     type,
     position: position ?? 0,
     collapsed: false,

@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_user_data_user_id ON user_data(user_id);
 -- ============================================================================
 
 COMMENT ON COLUMN user_data.workspace_state IS 'WorkspaceState - new format with workspaces and pages';
-COMMENT ON COLUMN user_data.data IS 'Legacy AppState - kept for backward compatibility';
+COMMENT ON COLUMN user_data.app_state IS 'Legacy AppState - kept for backward compatibility';
 COMMENT ON COLUMN user_data.schema_version IS 'Schema version: 1=AppState, 2=WorkspaceState';
 COMMENT ON COLUMN user_data.state_backup IS 'Backup of state before migration';
 COMMENT ON COLUMN user_data.migrated_at IS 'Timestamp when migration was performed';
@@ -64,7 +64,7 @@ BEGIN
   SET
     workspace_state = p_workspace_state,
     schema_version = 2,
-    state_backup = data, -- Backup old state
+    state_backup = app_state, -- Backup old state
     migrated_at = NOW()
   WHERE user_id = p_user_id;
 END;

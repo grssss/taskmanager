@@ -14,6 +14,10 @@ export interface Database {
           id: string
           user_id: string
           app_state: Json
+          workspace_state: Json | null
+          schema_version: number | null
+          state_backup: Json | null
+          migrated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -21,6 +25,10 @@ export interface Database {
           id?: string
           user_id: string
           app_state: Json
+          workspace_state?: Json | null
+          schema_version?: number | null
+          state_backup?: Json | null
+          migrated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -28,6 +36,10 @@ export interface Database {
           id?: string
           user_id?: string
           app_state?: Json
+          workspace_state?: Json | null
+          schema_version?: number | null
+          state_backup?: Json | null
+          migrated_at?: string | null
           created_at?: string
           updated_at?: string
         }

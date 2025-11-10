@@ -6,7 +6,6 @@
 import {
   WorkspaceState,
   Page,
-  Workspace,
   isWorkspaceState,
   defaultWorkspaceState,
 } from "./types";
@@ -93,7 +92,7 @@ export function autoFixWorkspaceState(state: WorkspaceState): {
     warnings: [],
   };
 
-  let fixedState = { ...state };
+  const fixedState = { ...state };
   const { activeWorkspaceId, pages, workspaces } = fixedState;
 
   // Fix 1: Ensure active workspace exists
@@ -114,7 +113,7 @@ export function autoFixWorkspaceState(state: WorkspaceState): {
   let invalidParentCount = 0;
 
   Object.entries(pages).forEach(([id, page]) => {
-    let fixedPage = { ...page };
+    const fixedPage = { ...page };
 
     // Fix workspace ID mismatch
     if (fixedPage.workspaceId !== fixedState.activeWorkspaceId) {
@@ -203,13 +202,14 @@ export function recoverFromCorruptedState(
     typeof corruptedState === "object" &&
     corruptedState !== null &&
     "pages" in corruptedState &&
-    typeof (corruptedState as any).pages === "object"
+    typeof (corruptedState as Record<string, unknown>).pages === "object"
   ) {
-    const pages = (corruptedState as any).pages;
-    const workspaces = (corruptedState as any).workspaces || [];
-
-    // Try to reconstruct a valid state
-    const defaultState = defaultWorkspaceState();
+    const candidate = corruptedState as {
+      pages: Record<string, Page>;
+      workspaces?: Array<{ id: string; name: string }>;
+    };
+    const pages = candidate.pages;
+    const workspaces = candidate.workspaces ?? [];
 
     if (workspaces.length > 0 && Object.keys(pages).length > 0) {
       const reconstructed: WorkspaceState = {

@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Menu } from "lucide-react";
 import AuthForm from "@/components/AuthForm";
-import UserProfile from "@/components/UserProfile";
+import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
 import Sidebar from "@/components/Sidebar";
 import PageCanvas from "@/components/PageCanvas";
 import WorkspaceDebugPanel from "@/components/WorkspaceDebugPanel";
@@ -14,21 +13,21 @@ import MobileNewPage from "@/components/MobileNewPage";
 import { useAuth } from "@/lib/AuthContext";
 import { useWorkspaceStorage } from "@/lib/useWorkspaceStorage";
 import { getRootPages } from "@/lib/types";
+import {
+  addWorkspaceToState,
+  updateWorkspaceInState,
+  type WorkspaceInput,
+  type WorkspaceUpdateInput,
+} from "@/lib/workspaceUtils";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [workspaceState, setWorkspaceState, storageLoading, syncStatus, historyActions] = useWorkspaceStorage();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [isClient] = useState(true);
   const [mobileView, setMobileView] = useState<'home' | 'search' | 'new' | 'page'>('home');
   const [isEditingDocument, setIsEditingDocument] = useState(false);
-
-  // Ensure client-side rendering
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // Detect mobile
   useEffect(() => {
@@ -98,20 +97,28 @@ export default function Home() {
       ...prev,
       activePageId: pageId,
     }));
-    // Close mobile menu when selecting a page
     if (isMobile) {
-      setMobileMenuOpen(false);
       setMobileView('page');
     }
   };
 
   const handleWorkspaceChange = (workspaceId: string) => {
-    const rootPages = getRootPages(workspaceState.pages, workspaceId);
-    setWorkspaceState({
-      ...workspaceState,
-      activeWorkspaceId: workspaceId,
-      activePageId: rootPages[0]?.id,
+    setWorkspaceState((prev) => {
+      const rootPages = getRootPages(prev.pages, workspaceId);
+      return {
+        ...prev,
+        activeWorkspaceId: workspaceId,
+        activePageId: rootPages[0]?.id,
+      };
     });
+  };
+
+  const handleWorkspaceCreate = (input: WorkspaceInput) => {
+    setWorkspaceState((prev) => addWorkspaceToState(prev, input));
+  };
+
+  const handleWorkspaceEdit = (workspaceId: string, updates: WorkspaceUpdateInput) => {
+    setWorkspaceState((prev) => updateWorkspaceInState(prev, workspaceId, updates));
   };
 
   const handleFixData = () => {
@@ -136,103 +143,100 @@ export default function Home() {
   // Check if there's a problem with the sidebar
   const rootPages = getRootPages(workspaceState.pages, workspaceState.activeWorkspaceId);
   const hasNoPagesInSidebar = rootPages.length === 0 && Object.keys(workspaceState.pages).length > 0;
+  const mobileMainClass = isClient && isMobile ? "flex-1 flex flex-col pt-14" : "flex-1 flex overflow-hidden";
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Desktop: Show UserProfile in top-left */}
+    <div className="h-screen flex overflow-hidden bg-zinc-950">
+      {/* Desktop: Sidebar */}
       {!isMobile && (
-        <UserProfile
+        <Sidebar
           workspaceState={workspaceState}
-          onWorkspaceChange={handleWorkspaceChange}
-          onWorkspaceStateChange={setWorkspaceState}
+          onStateChange={setWorkspaceState}
+          onPageSelect={handlePageSelect}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          mobileOpen={false}
+          onMobileClose={() => {}}
         />
       )}
 
-      {/* Mobile: Show Notion-style top bar */}
-      {isClient && isMobile && !isEditingDocument && (
-        <MobileTopBar
-          workspaceState={workspaceState}
-          onWorkspaceChange={handleWorkspaceChange}
-        />
-      )}
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Desktop: Always show sidebar */}
-        {!isMobile && (
-          <Sidebar
-            workspaceState={workspaceState}
-            onStateChange={setWorkspaceState}
-            onPageSelect={handlePageSelect}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            mobileOpen={false}
-            onMobileClose={() => {}}
-          />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile: Show Notion-style top bar */}
+        {isClient && isMobile && !isEditingDocument && (
+          <MobileTopBar workspaceState={workspaceState} />
         )}
 
-        {/* Mobile: Show different views based on mobileView state */}
-        {isClient && isMobile ? (
-          <div className="flex-1 flex flex-col pt-14">
-            {mobileView === 'home' && (
-              <MobileHome
-                workspaceState={workspaceState}
-                onPageSelect={handlePageSelect}
-              />
-            )}
-            {mobileView === 'search' && (
-              <MobileSearch
-                workspaceState={workspaceState}
-                onPageSelect={handlePageSelect}
-                onClose={() => setMobileView('home')}
-              />
-            )}
-            {mobileView === 'new' && (
-              <MobileNewPage
-                workspaceState={workspaceState}
-                onStateChange={setWorkspaceState}
-                onPageSelect={handlePageSelect}
-                onClose={() => setMobileView('home')}
-              />
-            )}
-            {mobileView === 'page' && (
-              <PageCanvas
-                workspaceState={workspaceState}
-                onStateChange={setWorkspaceState}
-                onPageSelect={handlePageSelect}
-                onBackClick={() => setMobileView('home')}
-                onEditingChange={setIsEditingDocument}
-              />
-            )}
-          </div>
-        ) : (
-          /* Desktop: Show PageCanvas */
-          <PageCanvas
-            workspaceState={workspaceState}
-            onStateChange={setWorkspaceState}
-            onPageSelect={handlePageSelect}
+        <div className={mobileMainClass}>
+          {isClient && isMobile ? (
+            <>
+              {mobileView === 'home' && (
+                <MobileHome
+                  workspaceState={workspaceState}
+                  onPageSelect={handlePageSelect}
+                />
+              )}
+              {mobileView === 'search' && (
+                <MobileSearch
+                  workspaceState={workspaceState}
+                  onPageSelect={handlePageSelect}
+                  onClose={() => setMobileView('home')}
+                />
+              )}
+              {mobileView === 'new' && (
+                <MobileNewPage
+                  workspaceState={workspaceState}
+                  onStateChange={setWorkspaceState}
+                  onPageSelect={handlePageSelect}
+                  onClose={() => setMobileView('home')}
+                />
+              )}
+              {mobileView === 'page' && (
+                <PageCanvas
+                  workspaceState={workspaceState}
+                  onStateChange={setWorkspaceState}
+                  onPageSelect={handlePageSelect}
+                  onBackClick={() => setMobileView('home')}
+                  onEditingChange={setIsEditingDocument}
+                />
+              )}
+            </>
+          ) : (
+            <PageCanvas
+              workspaceState={workspaceState}
+              onStateChange={setWorkspaceState}
+              onPageSelect={handlePageSelect}
+              workspaceSwitcherSlot={
+                <WorkspaceSwitcher
+                  workspaceState={workspaceState}
+                  onWorkspaceChange={handleWorkspaceChange}
+                  onWorkspaceCreate={handleWorkspaceCreate}
+                  onWorkspaceEdit={handleWorkspaceEdit}
+                />
+              }
+            />
+          )}
+        </div>
+
+        {/* Mobile: Bottom navigation */}
+        {isClient && isMobile && !isEditingDocument && (
+          <MobileBottomNav
+            onPagesClick={() => setMobileView('home')}
+            onSearchClick={() => setMobileView('search')}
+            onNewPageClick={() => setMobileView('new')}
+            activeTab={
+              mobileView === 'home' ? 'pages' :
+              mobileView === 'search' ? 'search' :
+              mobileView === 'new' ? 'new' :
+              undefined
+            }
           />
         )}
       </div>
 
-      {/* Mobile: Bottom navigation - Hide when editing document */}
-      {isClient && isMobile && !isEditingDocument && (
-        <MobileBottomNav
-          onPagesClick={() => setMobileView('home')}
-          onSearchClick={() => setMobileView('search')}
-          onNewPageClick={() => setMobileView('new')}
-          activeTab={
-            mobileView === 'home' ? 'pages' :
-            mobileView === 'search' ? 'search' :
-            mobileView === 'new' ? 'new' :
-            undefined
-          }
-        />
-      )}
-
       {/* Migration notice */}
       {syncStatus.migrated && (
         <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg">
-          ✅ Your data has been migrated to the new workspace system!
+          Your data has been migrated to the new workspace system!
         </div>
       )}
 
@@ -247,9 +251,9 @@ export default function Home() {
       {/* Warning if no pages in sidebar - Only on desktop */}
       {!isMobile && hasNoPagesInSidebar && (
         <div className="fixed top-20 right-4 bg-orange-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
-          <div className="font-bold">⚠️ Projects Not Showing</div>
+          <div className="font-bold">Warning: Projects Not Showing</div>
           <div className="text-sm mt-1">
-            Your projects exist but aren't appearing in the sidebar. Click the "🔧 Debug Data" button to inspect and fix.
+            Your projects exist but are not appearing in the sidebar. Click the Debug Data button to inspect and fix.
           </div>
         </div>
       )}

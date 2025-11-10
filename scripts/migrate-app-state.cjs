@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 process.env.TS_NODE_COMPILER_OPTIONS = JSON.stringify({
   module: 'commonjs',
   moduleResolution: 'node'

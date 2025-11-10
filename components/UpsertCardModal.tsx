@@ -18,10 +18,18 @@ type Props = {
   onClose: () => void;
 };
 
+type LegacyCard = Card & { categoryId?: string };
+
+const getLegacyCategoryIds = (existing?: Card): string[] => {
+  if (!existing) return [];
+  const legacy = existing as LegacyCard;
+  return legacy.categoryId ? [legacy.categoryId] : [];
+};
+
 export default function UpsertCardModal({ open, card, categories, onSave, onClose }: Props) {
   const { user } = useAuth();
   const [title, setTitle] = useState(card?.title ?? "");
-  const fallbackCategory = card && (card as any).categoryId ? [(card as any).categoryId as string] : [];
+  const fallbackCategory = getLegacyCategoryIds(card);
   const [description, setDescription] = useState(card?.description ?? "");
   const [categoryIds, setCategoryIds] = useState<string[]>(card?.categoryIds ?? fallbackCategory);
   const [dueDate, setDueDate] = useState<string | undefined>(card?.dueDate);
@@ -56,7 +64,7 @@ export default function UpsertCardModal({ open, card, categories, onSave, onClos
   useEffect(() => {
     setTitle(card?.title ?? "");
     setDescription(card?.description ?? "");
-    setCategoryIds(card?.categoryIds ?? (card && (card as any).categoryId ? [(card as any).categoryId as string] : []));
+    setCategoryIds(card?.categoryIds ?? getLegacyCategoryIds(card));
     setDueDate(card?.dueDate);
     setPriority(card?.priority ?? "medium");
     setLinks(card?.links ?? []);

@@ -12,11 +12,11 @@ import {
   Trash2,
   Edit2,
   X,
+  PanelLeftClose,
 } from "lucide-react";
 import {
   WorkspaceState,
   Page,
-  Workspace,
   getPageChildren,
   getRootPages,
 } from "@/lib/types";
@@ -28,6 +28,7 @@ import {
   togglePageCollapsed,
   reorderPages,
 } from "@/lib/pageUtils";
+import UserProfile from "@/components/UserProfile";
 
 interface SidebarProps {
   workspaceState: WorkspaceState;
@@ -54,7 +55,6 @@ export default function Sidebar({
     x: number;
     y: number;
   } | null>(null);
-  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [showSubpageMenu, setShowSubpageMenu] = useState<string | null>(null);
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
@@ -74,20 +74,6 @@ export default function Sidebar({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const activeWorkspace = workspaceState.workspaces.find(
-    (w) => w.id === workspaceState.activeWorkspaceId
-  );
-
-  const handleSwitchWorkspace = (workspaceId: string) => {
-    const rootPages = getRootPages(workspaceState.pages, workspaceId);
-    onStateChange({
-      ...workspaceState,
-      activeWorkspaceId: workspaceId,
-      activePageId: rootPages[0]?.id,
-    });
-    setShowWorkspaceMenu(false);
-  };
 
   // On desktop, show collapsed sidebar
   if (collapsed && !isMobile) {
@@ -278,69 +264,35 @@ export default function Sidebar({
         />
       )}
 
-      {/* Backdrop for workspace menu */}
-      {showWorkspaceMenu && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => setShowWorkspaceMenu(false)}
-        />
-      )}
-
       <div className={`
         w-64 bg-zinc-900 border-r border-white/10 flex flex-col h-screen
         ${isMobile ? 'fixed left-0 top-0 z-50 transition-transform duration-300' : ''}
         ${isMobile && !mobileOpen ? '-translate-x-full' : 'translate-x-0'}
       `}>
         {/* Header */}
-        <div className="p-4 border-b border-white/10 relative">
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-              className="flex items-center gap-1 font-semibold text-sm truncate flex-1 hover:bg-zinc-800 rounded px-2 py-1 -ml-2 transition-colors"
-            >
-              <span className="truncate">
-                {activeWorkspace?.icon} {activeWorkspace?.name}
-              </span>
-              <ChevronDown size={14} className={`shrink-0 transition-transform ${showWorkspaceMenu ? 'rotate-180' : ''}`} />
-            </button>
-            {isMobile ? (
+        <div className="p-4 border-b border-white/5 bg-gradient-to-b from-zinc-950 to-zinc-900 relative">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="flex-1 min-w-0">
+              <UserProfile />
+            </div>
+            {!isMobile ? (
               <button
-                onClick={onMobileClose}
-                className="p-1 rounded hover:bg-zinc-800 transition-colors"
-                title="Close sidebar"
+                onClick={onToggleCollapse}
+                className="p-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-300"
+                title="Collapse sidebar"
               >
-                <X size={20} />
+                <PanelLeftClose size={18} />
               </button>
             ) : (
               <button
-                onClick={onToggleCollapse}
-                className="p-1 rounded hover:bg-zinc-800 transition-colors"
-                title="Collapse sidebar"
+                onClick={onMobileClose}
+                className="p-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-300"
+                title="Close sidebar"
               >
-                <ChevronDown size={16} className="rotate-[-90deg]" />
+                <X size={18} />
               </button>
             )}
           </div>
-
-          {/* Workspace selector dropdown */}
-          {showWorkspaceMenu && (
-            <div className="absolute top-full left-4 right-4 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden">
-              {workspaceState.workspaces.map((workspace) => (
-                <button
-                  key={workspace.id}
-                  onClick={() => handleSwitchWorkspace(workspace.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                    workspace.id === workspaceState.activeWorkspaceId
-                      ? "bg-zinc-700"
-                      : "hover:bg-zinc-700/50"
-                  }`}
-                >
-                  <span>{workspace.icon}</span>
-                  <span className="truncate">{workspace.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Search */}
           <div className="relative">
@@ -353,7 +305,7 @@ export default function Sidebar({
               placeholder="Search pages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/10 bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-white"
+              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/15 bg-zinc-900/70 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
           </div>
         </div>
@@ -721,7 +673,6 @@ function PageTreeItem({
           />
         ) : (
           <span className="truncate flex-1 text-left">
-            {page.icon && <span className="mr-1">{page.icon}</span>}
             {page.title}
           </span>
         )}
@@ -729,7 +680,7 @@ function PageTreeItem({
         <span
           onClick={(e) => {
             e.stopPropagation();
-            handleContextMenu(e as any);
+            handleContextMenu(e);
           }}
           className={`shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${
             isActive ? "opacity-100" : ""

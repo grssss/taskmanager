@@ -7,12 +7,14 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   const loaded = useRef(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) setValue(JSON.parse(raw));
-    } catch {}
-    loaded.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const frame = requestAnimationFrame(() => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) setValue(JSON.parse(raw));
+      } catch {}
+      loaded.current = true;
+    });
+    return () => cancelAnimationFrame(frame);
   }, [key]);
 
   useEffect(() => {

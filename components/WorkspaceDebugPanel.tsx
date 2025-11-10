@@ -68,7 +68,7 @@ export default function WorkspaceDebugPanel({ workspaceState, onFix }: Workspace
             <div className="space-y-2">
               {rootPages.map(page => (
                 <div key={page.id} className="bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-200 dark:border-green-800">
-                  <div><strong>{page.icon} {page.title}</strong></div>
+                  <div><strong>{page.title}</strong></div>
                   <div className="text-xs text-zinc-400">ID: {page.id}</div>
                   <div className="text-xs">Type: {page.type} | Position: {page.position}</div>
                 </div>
@@ -83,7 +83,7 @@ export default function WorkspaceDebugPanel({ workspaceState, onFix }: Workspace
             <div className="space-y-2">
               {orphanedPages.map(page => (
                 <div key={page.id} className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded border border-orange-200 dark:border-orange-800">
-                  <div><strong>{page.icon} {page.title}</strong></div>
+                  <div><strong>{page.title}</strong></div>
                   <div className="text-xs text-zinc-400">ID: {page.id}</div>
                   <div className="text-xs">WorkspaceId: <code>{page.workspaceId}</code> {page.workspaceId !== activeWorkspaceId && <span className="text-red-500">(MISMATCH!)</span>}</div>
                   <div className="text-xs">ParentPageId: {page.parentPageId || 'none'} {page.parentPageId && !pages[page.parentPageId] && <span className="text-red-500">(INVALID!)</span>}</div>

@@ -51,9 +51,12 @@ export default function DocumentPageView({
 
   // Sync title state when page changes
   useEffect(() => {
-    setTitle(page.title);
-    // Auto-enable editing for new "Untitled" pages
-    setIsEditingTitle(page.title === "Untitled");
+    const frame = requestAnimationFrame(() => {
+      setTitle(page.title);
+      // Auto-enable editing for new "Untitled" pages
+      setIsEditingTitle(page.title === "Untitled");
+    });
+    return () => cancelAnimationFrame(frame);
   }, [page.id, page.title]);
 
   const handleTitleSave = () => {
@@ -335,11 +338,6 @@ export default function DocumentPageView({
       )}
       {/* Page Icon & Title - Simplified for mobile */}
       <div className={isMobile ? 'mb-4' : 'mb-8'}>
-        {!isMobile && page.icon && (
-          <div className="text-6xl mb-4">
-            {page.icon}
-          </div>
-        )}
 
         {isEditingTitle ? (
           <input
