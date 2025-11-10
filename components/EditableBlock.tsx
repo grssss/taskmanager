@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from "react";
+import { useState, useRef, useEffect, useCallback, KeyboardEvent, ClipboardEvent, MouseEvent as ReactMouseEvent } from "react";
 import { ContentBlock, ContentBlockType } from "@/lib/types";
 import { Check, GripVertical } from "lucide-react";
 import SlashCommandMenu from "./SlashCommandMenu";
@@ -16,6 +16,7 @@ interface EditableBlockProps {
   onMergeWithPrevious: (blockId: string) => void;
   onMergeWithNext: (blockId: string) => void;
   onTypeChange: (blockId: string, newType: ContentBlockType) => void;
+  onTransformBlock?: (blockId: string, transformer: (block: ContentBlock) => ContentBlock) => void;
   onFocus?: (blockId: string) => void;
   shouldFocus?: boolean;
   previousBlockId?: string;
@@ -46,6 +47,36 @@ function isMobileDevice(): boolean {
   return mobileRegex.test(userAgent) || isTouchOnly;
 }
 
+const normalizeUrl = (value: string): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const hasProtocol = /^[a-zA-Z]+:\/\//.test(trimmed);
+  const candidate = hasProtocol ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const isImageUrl = (value: string): boolean => {
+  if (!value) return false;
+  if (value.startsWith("data:image/")) return true;
+  try {
+    const url = new URL(value);
+    return /\.(png|jpe?g|gif|webp|svg)$/i.test(url.pathname);
+  } catch {
+    return /\.(png|jpe?g|gif|webp|svg)$/i.test(value);
+  }
+};
+
 export default function EditableBlock({
   block,
   blockIndex,
@@ -57,6 +88,7 @@ export default function EditableBlock({
   onMergeWithPrevious,
   onMergeWithNext,
   onTypeChange,
+  onTransformBlock,
   onFocus,
   shouldFocus = false,
   previousBlockId,
@@ -69,8 +101,12 @@ export default function EditableBlock({
   const [slashMenuQuery, setSlashMenuQuery] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const imageResizeRef = useRef({ startX: 0, startPercent: 100, parentWidth: 0 });
   const toggleContentRef = useRef<HTMLDivElement>(null);
+  const metadataRef = useRef(block.metadata);
   const content = typeof block.content === "string" ? block.content : "";
 
   // Get todo checked state from metadata
@@ -98,6 +134,10 @@ export default function EditableBlock({
   };
 
   const listNumber = getListNumber();
+
+  useEffect(() => {
+    metadataRef.current = block.metadata;
+  }, [block.metadata]);
 
   // Detect mobile device on mount
   useEffect(() => {
@@ -324,10 +364,230 @@ export default function EditableBlock({
     }
   };
 
+  const insertPlainText = (text: string) => {
+    if (!contentRef.current || typeof document === "undefined") return;
+    const sanitized = text.replace(/\r/g, "");
+    contentRef.current.focus();
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      const range = document.createRange();
+      range.selectNodeContents(contentRef.current);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+
+    try {
+      // insertText keeps formatting minimal while preserving newlines
+      document.execCommand("insertText", false, sanitized);
+    } catch {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(sanitized));
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const updatedText = contentRef.current.innerText;
+    onUpdate(block.id, updatedText);
+  };
+
+  const convertBlockToImage = (url: string, meta: Partial<Record<string, unknown>>) => {
+    const defaultMeta = { widthPercent: 100 };
+    if (onTransformBlock) {
+      onTransformBlock(block.id, (current) => ({
+        ...current,
+        type: "image",
+        metadata: {
+          ...defaultMeta,
+          ...current.metadata,
+          url,
+          ...meta,
+        },
+        content:
+          current.type === "image"
+            ? typeof current.content === "string"
+              ? current.content
+              : ""
+            : (contentRef.current?.innerText || "").trim(),
+      }));
+      return;
+    }
+
+    if (!onMetadataUpdate) return;
+    if (block.type !== "image") {
+      onTypeChange(block.id, "image");
+    }
+    onMetadataUpdate(block.id, {
+      ...defaultMeta,
+      ...block.metadata,
+      url,
+      ...meta,
+    });
+    const caption = block.type === "image" ? content : (contentRef.current?.innerText || "").trim();
+    onUpdate(block.id, caption);
+  };
+
+  const handleClipboardImage = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (!result) return;
+      convertBlockToImage(result, {
+        name: file.name || "Screenshot",
+        size: file.size,
+        type: file.type || "image/png",
+        source: "clipboard",
+        insertedAt: new Date().toISOString(),
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clampWidthPercent = (value: number) => Math.min(100, Math.max(20, value));
+
+  const handleImageResize = useCallback(
+    (value: number) => {
+      if (!onMetadataUpdate) return;
+      const widthPercent = clampWidthPercent(value);
+      const currentMeta = metadataRef.current || {};
+      if (typeof currentMeta.widthPercent === "number" && currentMeta.widthPercent === widthPercent) {
+        return;
+      }
+      onMetadataUpdate(block.id, {
+        ...currentMeta,
+        widthPercent,
+      });
+    },
+    [block.id, onMetadataUpdate]
+  );
+
+  const startResize = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const parentRect = imageContainerRef.current?.parentElement?.getBoundingClientRect();
+      imageResizeRef.current = {
+        startX: event.clientX,
+        startPercent: clampWidthPercent(Number(metadataRef.current?.widthPercent ?? 100)),
+        parentWidth: parentRect?.width ?? 0,
+      };
+      setIsResizing(true);
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!isResizing || typeof window === "undefined") return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const parentWidth =
+        imageResizeRef.current.parentWidth ||
+        imageContainerRef.current?.parentElement?.getBoundingClientRect().width ||
+        0;
+      if (parentWidth <= 0) return;
+      const deltaX = event.clientX - imageResizeRef.current.startX;
+      const deltaPercent = (deltaX / parentWidth) * 100;
+      handleImageResize(imageResizeRef.current.startPercent + deltaPercent);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, handleImageResize]);
+
+  const convertBlockToBookmark = (url: string) => {
+    if (onTransformBlock) {
+      onTransformBlock(block.id, (current) => ({
+        ...current,
+        type: "bookmark",
+        metadata: {
+          ...current.metadata,
+          url,
+          source: "clipboard",
+          insertedAt: new Date().toISOString(),
+        },
+        content: "",
+      }));
+      return;
+    }
+
+    if (!onMetadataUpdate) return;
+    if (block.type !== "bookmark") {
+      onTypeChange(block.id, "bookmark");
+    }
+    onMetadataUpdate(block.id, {
+      ...block.metadata,
+      url,
+      source: "clipboard",
+      insertedAt: new Date().toISOString(),
+    });
+    onUpdate(block.id, "");
+  };
+
   const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text/plain");
-    document.execCommand("insertText", false, text);
+    if (!contentRef.current) return;
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const imageItem = Array.from(clipboardData.items || []).find(
+      (item) => item.kind === "file" && item.type.startsWith("image/")
+    );
+    const clipboardFile = imageItem?.getAsFile() || clipboardData.files?.[0];
+    if (clipboardFile && clipboardFile.type.startsWith("image/")) {
+      e.preventDefault();
+      handleClipboardImage(clipboardFile);
+      return;
+    }
+
+    const plainText = clipboardData.getData("text/plain");
+    const uriList = clipboardData.getData("text/uri-list");
+    const html = clipboardData.getData("text/html");
+    const candidateUrl = (plainText || uriList || "").trim();
+    const isBlockEmpty = (contentRef.current.innerText || "").trim().length === 0;
+
+    if (candidateUrl && !candidateUrl.includes("\n") && isBlockEmpty) {
+      const normalizedUrl = normalizeUrl(candidateUrl);
+      if (normalizedUrl && onMetadataUpdate) {
+        e.preventDefault();
+        if (isImageUrl(normalizedUrl)) {
+          convertBlockToImage(normalizedUrl, {
+            source: "link",
+            insertedAt: new Date().toISOString(),
+          });
+        } else {
+          convertBlockToBookmark(normalizedUrl);
+        }
+        return;
+      }
+    }
+
+    if (plainText) {
+      e.preventDefault();
+      insertPlainText(plainText);
+      return;
+    }
+
+    if (html) {
+      e.preventDefault();
+      const temp = document.createElement("div");
+      temp.innerHTML = html;
+      insertPlainText(temp.innerText);
+      return;
+    }
   };
 
   const handleSlashCommand = (type: ContentBlockType) => {
@@ -766,18 +1026,37 @@ export default function EditableBlock({
 
       case "image":
         const imageUrl = (block.metadata?.url as string) || "";
+        const widthPercentRaw = Number(block.metadata?.widthPercent ?? 100);
+        const widthPercent = clampWidthPercent(widthPercentRaw);
+        const containerStyle = { width: `${widthPercent}%`, maxWidth: "100%" };
 
         return (
-          <div className="my-2 border border-zinc-700 rounded-lg overflow-hidden bg-zinc-900/50">
+          <div className="my-2">
             {imageUrl ? (
-              <div>
-                <img
-                  src={imageUrl}
-                  alt="Block image"
-                  className="w-full object-cover"
-                  style={{ maxHeight: '500px' }}
-                />
-                <div className="p-2 border-t border-zinc-700">
+              <div className="space-y-2">
+                <div
+                  ref={imageContainerRef}
+                  className="mx-auto relative group rounded-sm overflow-hidden"
+                  style={containerStyle}
+                >
+                  <img
+                    src={imageUrl}
+                    alt="Block image"
+                    className="w-full object-cover"
+                    style={{ maxHeight: "500px" }}
+                  />
+                  <div
+                    role="presentation"
+                    className={`absolute inset-y-0 -right-1 w-2 rounded-full transition-all ${
+                      isResizing ? "bg-zinc-300" : "bg-transparent group-hover:bg-zinc-500/40"
+                    }`}
+                    onMouseDown={startResize}
+                  />
+                  <div className="pointer-events-none absolute bottom-2 right-2 text-[11px] text-zinc-400">
+                    Drag edge to resize
+                  </div>
+                </div>
+                <div>
                   <div
                     {...commonProps}
                     className={`${commonProps.className} text-xs text-zinc-400`}
@@ -796,7 +1075,7 @@ export default function EditableBlock({
                     if (onMetadataUpdate) {
                       onMetadataUpdate(block.id, {
                         ...block.metadata,
-                        url: e.target.value
+                        url: e.target.value,
                       });
                     }
                   }}

@@ -220,6 +220,25 @@ export default function DocumentPageView({
     }
   };
 
+  const handleBlockTransform = (
+    blockId: string,
+    transformer: (block: ContentBlock) => ContentBlock
+  ) => {
+    const updatedContent = (page.content || []).map((block) =>
+      block.id === blockId
+        ? {
+            ...transformer(block),
+            id: block.id,
+            createdAt: block.createdAt,
+            updatedAt: new Date().toISOString(),
+          }
+        : block
+    );
+    const newState = updatePage(workspaceState, page.id, { content: updatedContent });
+    onStateChange(newState);
+    setTimeout(() => setFocusedBlockId(blockId), 0);
+  };
+
   const handleShare = async () => {
     const nav =
       typeof navigator !== "undefined"
@@ -386,6 +405,7 @@ export default function DocumentPageView({
               onMergeWithPrevious={handleBlockMerge}
               onMergeWithNext={handleBlockMergeWithNext}
               onTypeChange={handleBlockTypeChange}
+              onTransformBlock={handleBlockTransform}
               onFocus={(blockId) => {
                 setFocusedBlockId(blockId);
                 if (isMobile) setShowToolbar(true);
