@@ -55,7 +55,6 @@ export default function Sidebar({
     y: number;
   } | null>(null);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
-  const [showNewPageMenu, setShowNewPageMenu] = useState(false);
   const [showSubpageMenu, setShowSubpageMenu] = useState<string | null>(null);
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
@@ -117,12 +116,19 @@ export default function Sidebar({
     );
 
     try {
-      const newState = addPageToState(workspaceState, newPage);
+      let newState = addPageToState(workspaceState, newPage);
+
+      if (parentPageId) {
+        const parent = newState.pages[parentPageId];
+        if (parent && parent.collapsed) {
+          newState = updatePage(newState, parentPageId, { collapsed: false });
+        }
+      }
+
       onStateChange({
         ...newState,
         activePageId: newPage.id,
       });
-      setShowNewPageMenu(false);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to create page");
     }
@@ -247,6 +253,13 @@ export default function Sidebar({
     workspaceState.pages,
     workspaceState.activeWorkspaceId
   );
+  const databaseRootPages = rootPages.filter((page) => page.type === "database");
+  const documentRootPages = rootPages.filter((page) => page.type === "document");
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const matchesSearch = (page: Page) =>
+    !normalizedQuery || page.title.toLowerCase().includes(normalizedQuery);
+  const visibleDatabasePages = databaseRootPages.filter(matchesSearch);
+  const visibleDocumentPages = documentRootPages.filter(matchesSearch);
 
   // Debug logging
   console.log('[Sidebar] Active Workspace ID:', workspaceState.activeWorkspaceId);
@@ -270,14 +283,6 @@ export default function Sidebar({
         <div
           className="fixed inset-0 z-30"
           onClick={() => setShowWorkspaceMenu(false)}
-        />
-      )}
-
-      {/* Backdrop for new page menu */}
-      {showNewPageMenu && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => setShowNewPageMenu(false)}
         />
       )}
 
@@ -354,42 +359,22 @@ export default function Sidebar({
         </div>
 
         {/* Pages list */}
-        <div className="flex-1 overflow-y-auto p-2">
-          <div className="flex items-center justify-between mb-2 px-2 relative">
-            <span className="text-xs text-zinc-400 uppercase font-medium">
-              Pages
+        <div className="flex-1 overflow-y-auto p-2 space-y-4">
+          <div className="flex items-center justify-between px-2 relative">
+            <span className="text-xs text-zinc-400 uppercase font-medium tracking-wide">
+              Databases
             </span>
             <button
-              onClick={() => setShowNewPageMenu(!showNewPageMenu)}
+              onClick={() => handleCreatePage("database")}
               className="p-1 rounded hover:bg-zinc-800 transition-colors"
-              title="New page"
+              title="New database page"
             >
               <Plus size={14} />
             </button>
-
-            {/* New page menu */}
-            {showNewPageMenu && (
-              <div className="absolute top-full right-2 mt-1 z-40 border border-white/10 rounded-md bg-zinc-800 shadow-xl overflow-hidden min-w-[180px]">
-                <button
-                  onClick={() => handleCreatePage("document")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
-                >
-                  <FileText size={14} />
-                  <span>Document Page</span>
-                </button>
-                <button
-                  onClick={() => handleCreatePage("database")}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-zinc-700 transition-colors"
-                >
-                  <Table2 size={14} />
-                  <span>Database Page</span>
-                </button>
-              </div>
-            )}
           </div>
 
-          <div className="space-y-0.5">
-            {rootPages.map((page) => (
+          <div className="space-y-0.5 px-0.5">
+            {visibleDatabasePages.map((page) => (
               <PageTreeItem
                 key={page.id}
                 page={page}
@@ -410,8 +395,63 @@ export default function Sidebar({
                 onStartRename={setRenamingPageId}
                 onRename={handleRenamePage}
                 level={0}
+                variant="database"
+                hideChildren
               />
             ))}
+            {visibleDatabasePages.length === 0 && (
+              <div className="text-xs text-zinc-500 px-2 py-1.5 rounded-md bg-white/5">
+                {normalizedQuery ? "No matching databases" : "No databases yet"}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between px-2 pt-2">
+            <span className="text-xs text-zinc-400 uppercase font-medium tracking-wide">
+              Documents
+            </span>
+            <button
+              onClick={() => handleCreatePage("document")}
+              className="p-1 rounded hover:bg-zinc-800 transition-colors"
+              title="New document page"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-0.5 px-0.5">
+            {visibleDocumentPages.map((page) => (
+              <PageTreeItem
+                key={page.id}
+                page={page}
+                pages={workspaceState.pages}
+                activePageId={workspaceState.activePageId}
+                onSelect={onPageSelect}
+                onToggleCollapsed={handleToggleCollapsed}
+                onContextMenu={(pageId, x, y) => setContextMenu({ pageId, x, y })}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                draggedPageId={draggedPageId}
+                dropTargetPageId={dropTargetPageId}
+                dropPosition={dropPosition}
+                renamingPageId={renamingPageId}
+                onStartRename={setRenamingPageId}
+                onRename={handleRenamePage}
+                level={0}
+                variant="document"
+                allowedChildTypes={["document"]}
+                onAddChild={(parentId) => handleCreatePage("document", parentId)}
+                showAddButton
+              />
+            ))}
+            {visibleDocumentPages.length === 0 && (
+              <div className="text-xs text-zinc-500 px-2 py-1.5 rounded-md bg-white/5">
+                {normalizedQuery ? "No matching documents" : "No documents yet"}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -527,6 +567,11 @@ interface PageTreeItemProps {
   onStartRename: (pageId: string | null) => void;
   onRename: (pageId: string, newTitle: string) => void;
   level: number;
+  variant?: "default" | "database" | "document";
+  hideChildren?: boolean;
+  allowedChildTypes?: Page["type"][];
+  onAddChild?: (parentId: string) => void;
+  showAddButton?: boolean;
 }
 
 function PageTreeItem({
@@ -548,14 +593,24 @@ function PageTreeItem({
   onStartRename,
   onRename,
   level,
+  variant = "default",
+  hideChildren = false,
+  allowedChildTypes,
+  onAddChild,
+  showAddButton = false,
 }: PageTreeItemProps) {
   const [renameValue, setRenameValue] = useState(page.title);
-  const children = getPageChildren(pages, page.id);
+  const childCandidates = hideChildren ? [] : getPageChildren(pages, page.id);
+  const children = allowedChildTypes
+    ? childCandidates.filter((child) => allowedChildTypes.includes(child.type))
+    : childCandidates;
   const hasChildren = children.length > 0;
   const isActive = page.id === activePageId;
   const isDragging = draggedPageId === page.id;
   const isDropTarget = dropTargetPageId === page.id;
   const isRenaming = renamingPageId === page.id;
+  const showToggle =
+    !hideChildren && (hasChildren || variant === "document");
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -621,7 +676,7 @@ function PageTreeItem({
         tabIndex={0}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
-        {hasChildren && (
+        {showToggle && (
           <span
             onClick={(e) => {
               e.stopPropagation();
@@ -682,13 +737,26 @@ function PageTreeItem({
         >
           <MoreHorizontal size={14} />
         </span>
+
+        {showAddButton && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddChild?.(page.id);
+            }}
+            className="shrink-0 p-1 rounded hover:bg-zinc-700 transition-colors opacity-0 group-hover:opacity-100 text-zinc-300"
+            title="Add subpage"
+          >
+            <Plus size={12} />
+          </button>
+        )}
       </div>
       {isDropTarget && dropPosition === "after" && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 z-10" />
       )}
 
       {/* Children */}
-      {hasChildren && !page.collapsed && (
+      {hasChildren && !page.collapsed && !hideChildren && (
         <div className="mt-0.5">
           {children.map((child) => (
             <PageTreeItem
@@ -711,6 +779,11 @@ function PageTreeItem({
               onStartRename={onStartRename}
               onRename={onRename}
               level={level + 1}
+              variant={variant}
+              hideChildren={hideChildren}
+              allowedChildTypes={allowedChildTypes}
+              onAddChild={onAddChild}
+              showAddButton={showAddButton}
             />
           ))}
         </div>

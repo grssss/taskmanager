@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
+    "dev:https": "next dev --hostname 0.0.0.0 --port 3000 --experimental-https --experimental-https-key ./localhost-key.pem --experimental-https-cert ./localhost.pem",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -33,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

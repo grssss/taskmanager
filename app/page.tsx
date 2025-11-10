@@ -140,7 +140,13 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Desktop: Show UserProfile in top-left */}
-      {!isMobile && <UserProfile />}
+      {!isMobile && (
+        <UserProfile
+          workspaceState={workspaceState}
+          onWorkspaceChange={handleWorkspaceChange}
+          onWorkspaceStateChange={setWorkspaceState}
+        />
+      )}
 
       {/* Mobile: Show Notion-style top bar */}
       {isClient && isMobile && !isEditingDocument && (
