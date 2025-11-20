@@ -13,17 +13,17 @@ function requireEnv(name: string, value: string | undefined): string {
   return value
 }
 
-const supabaseUrl = requireEnv(
-  'PROD_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL',
-  process.env.PROD_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
-)
-
-const serviceRoleKey = requireEnv(
-  'PROD_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY',
-  process.env.PROD_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
 export function createServerSupabaseClient() {
+  const supabaseUrl = requireEnv(
+    'PROD_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL',
+    process.env.PROD_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  )
+
+  const serviceRoleKey = requireEnv(
+    'PROD_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY',
+    process.env.PROD_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+
   return createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false,
