@@ -11,6 +11,93 @@ import type { Database } from './database.types'
 type UserDataInsert = Database['public']['Tables']['user_data']['Insert']
 type UserDataUpdate = Database['public']['Tables']['user_data']['Update']
 
+type ErrorDetail = {
+  type: string
+  name?: string
+  message?: string
+  code?: string | number
+  details?: unknown
+  hint?: unknown
+  status?: number
+  stack?: string
+}
+
+const safeStringify = (value: unknown) => {
+  const seen = new WeakSet()
+  try {
+    return JSON.stringify(
+      value,
+      (_key, val) => {
+        if (typeof val === 'bigint') return val.toString()
+        if (typeof val === 'function') return `[Function ${val.name || 'anonymous'}]`
+        if (typeof val === 'symbol') return val.toString()
+        if (typeof val === 'undefined') return 'undefined'
+        if (typeof val === 'object' && val !== null) {
+          if (seen.has(val as object)) {
+            return '[Circular]'
+          }
+          seen.add(val as object)
+        }
+        return val
+      },
+      2
+    )
+  } catch (error) {
+    return `<<Failed to stringify error payload: ${(error as Error)?.message ?? error}>>`
+  }
+}
+
+const formatSupabaseError = (error: unknown): ErrorDetail => {
+  if (error instanceof Error) {
+    const errorRecord = error as unknown as Record<string, unknown>
+    return {
+      type: error.name || 'Error',
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: errorRecord.code as string | number | undefined,
+      details: errorRecord.details,
+      hint: errorRecord.hint,
+      status: errorRecord.status as number | undefined,
+    }
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const obj = error as Record<string, unknown>
+    return {
+      type: obj.name?.toString() ?? 'SupabaseError',
+      name: obj.name?.toString(),
+      message: (obj.message ?? obj.error)?.toString() ?? 'No message',
+      code: (obj.code ?? obj.status)?.toString(),
+      details: obj.details ?? obj.error_description,
+      hint: obj.hint,
+      status: typeof obj.status === 'number' ? (obj.status as number) : undefined,
+    }
+  }
+
+  if (typeof error === 'string') {
+    return { type: 'string', message: error }
+  }
+
+  return {
+    type: typeof error,
+    message: error ? String(error) : 'Unknown error',
+  }
+}
+
+const logSupabaseError = (
+  label: string,
+  error: unknown,
+  extra?: Record<string, unknown>
+) => {
+  const details = {
+    timestamp: new Date().toISOString(),
+    ...formatSupabaseError(error),
+    ...extra,
+  }
+  console.error(`${label}: ${safeStringify(details)}`)
+}
+
 export function useWorkspaceStorage(): [
   WorkspaceState,
   (value: WorkspaceState | ((prev: WorkspaceState) => WorkspaceState)) => void,
@@ -60,10 +147,8 @@ export function useWorkspaceStorage(): [
           .single()
 
         if (error) {
-          console.error('Supabase error loading data:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
+          logSupabaseError('Supabase error loading data', error, {
+            userId: user?.id,
           })
 
           if (error.code === 'PGRST116') {
@@ -86,7 +171,10 @@ export function useWorkspaceStorage(): [
               .insert(insertPayload)
 
                 if (insertError) {
-                  console.error('Failed to insert data:', insertError)
+                  logSupabaseError('Failed to insert migrated data', insertError, {
+                    userId: user.id,
+                    source: 'localStorage',
+                  })
                 } else if (isMountedRef.current) {
                   setState(migratedState)
                   currentStateRef.current = migratedState
@@ -96,7 +184,9 @@ export function useWorkspaceStorage(): [
                   console.log('Data migrated successfully and localStorage cleared!')
                 }
               } catch (e) {
-                console.error('Failed to migrate localStorage data:', e)
+                logSupabaseError('Failed to migrate localStorage data', e, {
+                  userId: user.id,
+                })
               }
             } else {
               // No local data either, insert initial value
@@ -108,19 +198,23 @@ export function useWorkspaceStorage(): [
               workspace_state: initialState as unknown as UserDataInsert['workspace_state'],
               schema_version: 2,
             }
-            const { error: insertError } = await supabase
+            const { error: insertError, data: insertData } = await supabase
               .from('user_data')
               .insert(insertPayload)
 
               if (insertError) {
-                console.error('Failed to create initial data:', insertError)
+                logSupabaseError('Failed to create initial data', insertError, {
+                  userId: user.id,
+                })
               } else if (isMountedRef.current) {
                 setState(initialState)
                 currentStateRef.current = initialState
               }
             }
           } else {
-            console.error('Error loading data from Supabase:', error)
+            logSupabaseError('Error loading data from Supabase', error, {
+              userId: user?.id,
+            })
           }
         } else if (data && isMountedRef.current) {
           const record = data as {
@@ -183,7 +277,9 @@ export function useWorkspaceStorage(): [
           console.log('Data loaded and migrated successfully!')
         }
       } catch (err) {
-        console.error('Unexpected error loading data:', err)
+        logSupabaseError('Unexpected error loading data', err, {
+          userId: user?.id,
+        })
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
@@ -221,7 +317,9 @@ export function useWorkspaceStorage(): [
           .eq('user_id', user.id)
 
         if (error) {
-          console.error('Error saving to Supabase:', error)
+          logSupabaseError('Error saving to Supabase', error, {
+            userId: user.id,
+          })
           setSyncError(error.message || 'Failed to sync data')
         } else {
           setLastSynced(new Date())
@@ -229,7 +327,9 @@ export function useWorkspaceStorage(): [
           console.log('WorkspaceState saved to Supabase successfully')
         }
       } catch (err) {
-        console.error('Unexpected error saving data:', err)
+        logSupabaseError('Unexpected error saving data', err, {
+          userId: user.id,
+        })
         setSyncError(err instanceof Error ? err.message : 'Failed to sync data')
       } finally {
         setSyncing(false)
@@ -278,7 +378,9 @@ export function useWorkspaceStorage(): [
             saveToSupabase(currentStateRef.current)
           }
         } catch (error) {
-          console.error('sendBeacon failed, using fallback:', error)
+          logSupabaseError('sendBeacon failed, using fallback', error, {
+            userId: user.id,
+          })
           saveToSupabase(currentStateRef.current)
         }
       }
