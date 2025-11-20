@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const { error } = await supabase
       .from('user_data')
-      .update(updateData)
+      .update(updateData as any)
       .eq('user_id', userId)
 
     if (error) {
