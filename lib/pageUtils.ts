@@ -26,47 +26,36 @@ const MAX_PAGE_DEPTH = 10;
 export function createPage(
   workspaceId: string,
   title: string,
-  type: "document" | "database",
+  type: "database" = "database",
   parentPageId?: string,
   position?: number
 ): Page {
   const now = new Date().toISOString();
   const pageId = `page-${uid()}`;
 
+  if (type !== "database") {
+    throw new Error("Only database pages are supported in this build");
+  }
+
   const basePage: Page = {
     id: pageId,
     workspaceId,
     parentPageId,
     title,
-    type,
+    type: "database",
     position: position ?? 0,
     collapsed: false,
     createdAt: now,
     updatedAt: now,
   };
 
-  if (type === "document") {
-    return {
-      ...basePage,
-      content: [
-        {
-          id: `block-${uid()}`,
-          type: "paragraph",
-          content: "",
-          createdAt: now,
-          updatedAt: now,
-        },
-      ],
-    };
-  } else {
-    return {
-      ...basePage,
-      databaseConfig: {
-        boardState: defaultState(),
-        primaryView: "kanban",
-      },
-    };
-  }
+  return {
+    ...basePage,
+    databaseConfig: {
+      boardState: defaultState(),
+      primaryView: "kanban",
+    },
+  };
 }
 
 /**

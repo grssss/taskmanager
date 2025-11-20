@@ -1,9 +1,4 @@
-import {
-  WorkspaceState,
-  Workspace,
-  Page,
-  ContentBlock,
-} from "./types";
+import { WorkspaceState, Workspace, Page } from "./types";
 import { createPage } from "./pageUtils";
 
 const ICON_FALLBACK = "🗂️";
@@ -36,25 +31,6 @@ type WorkspaceTemplate = {
   defaultPageId: string;
 };
 
-function createWelcomeContent(title: string, now: string): ContentBlock[] {
-  return [
-    {
-      id: generateId("block"),
-      type: "heading1",
-      content: `Welcome to ${title}!`,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: generateId("block"),
-      type: "paragraph",
-      content: "Start by creating pages or databases from the sidebar.",
-      createdAt: now,
-      updatedAt: now,
-    },
-  ];
-}
-
 function createWorkspaceTemplate(input: WorkspaceInput): WorkspaceTemplate {
   const now = new Date().toISOString();
   const workspaceId = generateId("workspace");
@@ -70,21 +46,14 @@ function createWorkspaceTemplate(input: WorkspaceInput): WorkspaceTemplate {
     updatedAt: now,
   };
 
-  const welcomePage = createPage(workspaceId, "Welcome", "document");
-  welcomePage.position = 0;
-  welcomePage.title = "Getting Started";
-  welcomePage.icon = "📘";
-  welcomePage.content = createWelcomeContent(name, now);
-
-  const tasksPage = createPage(workspaceId, "Tasks", "database");
-  tasksPage.position = 1;
+  const tasksPage = createPage(workspaceId, "Tasks");
+  tasksPage.position = 0;
   tasksPage.icon = "📋";
 
   return {
     workspace,
-    defaultPageId: welcomePage.id,
+    defaultPageId: tasksPage.id,
     pages: {
-      [welcomePage.id]: welcomePage,
       [tasksPage.id]: tasksPage,
     },
   };

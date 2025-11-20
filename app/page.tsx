@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AuthForm from "@/components/AuthForm";
 import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
 import Sidebar from "@/components/Sidebar";
@@ -19,6 +19,7 @@ import {
   type WorkspaceInput,
   type WorkspaceUpdateInput,
 } from "@/lib/workspaceUtils";
+import { createPage, addPageToState } from "@/lib/pageUtils";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -27,7 +28,6 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient] = useState(true);
   const [mobileView, setMobileView] = useState<'home' | 'search' | 'new' | 'page'>('home');
-  const [isEditingDocument, setIsEditingDocument] = useState(false);
 
   // Detect mobile
   useEffect(() => {
@@ -75,23 +75,6 @@ export default function Home() {
     };
   }, [historyActions]);
 
-  if (authLoading || storageLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">
-            {authLoading ? "Loading..." : "Loading your workspace..."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthForm />;
-  }
-
   const handlePageSelect = (pageId: string) => {
     setWorkspaceState((prev) => ({
       ...prev,
@@ -104,11 +87,25 @@ export default function Home() {
 
   const handleWorkspaceChange = (workspaceId: string) => {
     setWorkspaceState((prev) => {
-      const rootPages = getRootPages(prev.pages, workspaceId);
+      const rootBoards = getRootPages(prev.pages, workspaceId).filter(
+        (page) => page.type === "database"
+      );
+
+      if (rootBoards.length > 0) {
+        return {
+          ...prev,
+          activeWorkspaceId: workspaceId,
+          activePageId: rootBoards[0].id,
+        };
+      }
+
+      const newBoard = createPage(workspaceId, "New Board");
+      const updatedState = addPageToState(prev, newBoard);
+
       return {
-        ...prev,
+        ...updatedState,
         activeWorkspaceId: workspaceId,
-        activePageId: rootPages[0]?.id,
+        activePageId: newBoard.id,
       };
     });
   };
@@ -140,9 +137,82 @@ export default function Home() {
     });
   };
 
-  // Check if there's a problem with the sidebar
-  const rootPages = getRootPages(workspaceState.pages, workspaceState.activeWorkspaceId);
-  const hasNoPagesInSidebar = rootPages.length === 0 && Object.keys(workspaceState.pages).length > 0;
+  // Ensure the active selection is always a board
+  const rootBoards = useMemo(
+    () =>
+      getRootPages(workspaceState.pages, workspaceState.activeWorkspaceId).filter(
+        (page) => page.type === "database"
+      ),
+    [workspaceState.pages, workspaceState.activeWorkspaceId]
+  );
+
+  useEffect(() => {
+    if (authLoading || storageLoading || !user) {
+      return;
+    }
+
+    const activePage =
+      workspaceState.activePageId
+        ? workspaceState.pages[workspaceState.activePageId]
+        : undefined;
+
+    if (activePage && activePage.type === "database") {
+      return;
+    }
+
+    if (rootBoards.length > 0) {
+      if (rootBoards[0].id === workspaceState.activePageId) {
+        return;
+      }
+      setWorkspaceState((prev) => ({
+        ...prev,
+        activePageId: rootBoards[0].id,
+      }));
+      return;
+    }
+
+    const newBoard = createPage(
+      workspaceState.activeWorkspaceId,
+      "New Board"
+    );
+    setWorkspaceState((prev) => {
+      const updatedState = addPageToState(prev, newBoard);
+      return {
+        ...updatedState,
+        activePageId: newBoard.id,
+      };
+    });
+  }, [
+    authLoading,
+    storageLoading,
+    user,
+    workspaceState.activePageId,
+    workspaceState.activeWorkspaceId,
+    workspaceState.pages,
+    rootBoards,
+    setWorkspaceState,
+  ]);
+
+  if (authLoading || storageLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">
+            {authLoading ? "Loading..." : "Loading your workspace..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  // Check if there are any boards to render
+  const hasNoBoardsInSidebar =
+    rootBoards.length === 0 && Object.keys(workspaceState.pages).length > 0;
   const mobileMainClass = isClient && isMobile ? "flex-1 flex flex-col pt-14" : "flex-1 flex overflow-hidden";
 
   return (
@@ -161,8 +231,8 @@ export default function Home() {
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile: Show Notion-style top bar */}
-        {isClient && isMobile && !isEditingDocument && (
+        {/* Mobile: Show top bar */}
+        {isClient && isMobile && (
           <MobileTopBar workspaceState={workspaceState} />
         )}
 
@@ -196,7 +266,6 @@ export default function Home() {
                   onStateChange={setWorkspaceState}
                   onPageSelect={handlePageSelect}
                   onBackClick={() => setMobileView('home')}
-                  onEditingChange={setIsEditingDocument}
                 />
               )}
             </>
@@ -218,7 +287,7 @@ export default function Home() {
         </div>
 
         {/* Mobile: Bottom navigation */}
-        {isClient && isMobile && !isEditingDocument && (
+        {isClient && isMobile && (
           <MobileBottomNav
             onPagesClick={() => setMobileView('home')}
             onSearchClick={() => setMobileView('search')}
@@ -248,12 +317,12 @@ export default function Home() {
         />
       )}
 
-      {/* Warning if no pages in sidebar - Only on desktop */}
-      {!isMobile && hasNoPagesInSidebar && (
-        <div className="fixed top-20 right-4 bg-orange-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
-          <div className="font-bold">Warning: Projects Not Showing</div>
+      {/* Warning if no boards in sidebar - Only on desktop */}
+      {!isMobile && hasNoBoardsInSidebar && (
+        <div className="fixed top-20 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-md">
+          <div className="font-bold">No Boards Yet</div>
           <div className="text-sm mt-1">
-            Your projects exist but are not appearing in the sidebar. Click the Debug Data button to inspect and fix.
+            Create a new board with the “+” button in the sidebar to get started.
           </div>
         </div>
       )}

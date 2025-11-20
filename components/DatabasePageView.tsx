@@ -14,13 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import {
-  Plus,
-  SlidersHorizontal,
-  Tags,
-  LayoutGrid,
-  Table2,
-} from "lucide-react";
+import { SlidersHorizontal, Tags } from "lucide-react";
 import {
   WorkspaceState,
   Page,
@@ -31,7 +25,6 @@ import {
 } from "@/lib/types";
 import { updateDatabaseConfig } from "@/lib/pageUtils";
 import ColumnView from "@/components/ColumnView";
-import TableView from "@/components/TableView";
 import ManageColumnsModal from "@/components/ManageColumnsModal";
 import ManageCategoriesModal from "@/components/ManageCategoriesModal";
 import UpsertCardModal from "@/components/UpsertCardModal";
@@ -53,9 +46,6 @@ export default function DatabasePageView({
   onStateChange,
 }: DatabasePageViewProps) {
   const board = page.databaseConfig.boardState;
-  const [viewMode, setViewMode] = useState<"kanban" | "table">(
-    page.databaseConfig.primaryView
-  );
   const [showColumns, setShowColumns] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [editingCard, setEditingCard] = useState<null | {
@@ -225,28 +215,6 @@ export default function DatabasePageView({
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-zinc-900 shadow-sm p-1">
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
-                viewMode === "kanban"
-                  ? "bg-zinc-700 text-zinc-200"
-                  : "text-zinc-200 hover:text-zinc-100"
-              }`}
-            >
-              <LayoutGrid size={16} /> Kanban
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
-                viewMode === "table"
-                  ? "bg-zinc-700 text-zinc-200"
-                  : "text-zinc-200 hover:text-zinc-100"
-              }`}
-            >
-              <Table2 size={16} /> Table
-            </button>
-          </div>
           <button
             onClick={() => setShowCategories(true)}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 shadow-sm transition-colors hover:text-zinc-100 hover:shadow"
@@ -299,76 +267,64 @@ export default function DatabasePageView({
       </section>
 
       {/* Content */}
-      {viewMode === "kanban" ? (
-        <DndContext
-          sensors={sensors}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragCancel={onDragCancel}
-        >
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            <SortableContext items={columnIds}>
-              {board.columns.map((column) => (
-                <div
-                  key={column.id}
-                  className="min-w-[320px] max-w-[360px] flex-1"
-                >
-                  <ColumnView
-                    column={column}
-                    cards={column.cardIds
-                      .map((cardId) => board.cards[cardId])
-                      .filter(Boolean)
-                      .filter((card) => {
+      <DndContext
+        sensors={sensors}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={onDragCancel}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          <SortableContext items={columnIds}>
+            {board.columns.map((column) => (
+              <div
+                key={column.id}
+                className="min-w-[320px] max-w-[360px] flex-1"
+              >
+                <ColumnView
+                  column={column}
+                  cards={column.cardIds
+                    .map((cardId) => board.cards[cardId])
+                    .filter(Boolean)
+                    .filter((card) => {
+                      if (
+                        showHighPriorityOnly &&
+                        !(
+                          card.priority === "high" ||
+                          card.priority === "critical"
+                        )
+                      ) {
+                        return false;
+                      }
+
+                      if (activeFiltersSafe.length > 0) {
+                        const categoriesForCard = card.categoryIds ?? [];
+                        if (categoriesForCard.length === 0) return false;
                         if (
-                          showHighPriorityOnly &&
-                          !(
-                            card.priority === "high" ||
-                            card.priority === "critical"
+                          !categoriesForCard.some((categoryId) =>
+                            activeFiltersSafe.includes(categoryId)
                           )
                         ) {
                           return false;
                         }
+                      }
 
-                        if (activeFiltersSafe.length > 0) {
-                          const categoriesForCard = card.categoryIds ?? [];
-                          if (categoriesForCard.length === 0) return false;
-                          if (
-                            !categoriesForCard.some((categoryId) =>
-                              activeFiltersSafe.includes(categoryId)
-                            )
-                          ) {
-                            return false;
-                          }
-                        }
-
-                        return true;
-                      })}
-                    categories={board.categories}
-                    onAdd={() => handleCreate(column.id)}
-                    onEdit={(id) => setEditingCard({ id })}
-                    onDelete={deleteCard}
-                  />
-                </div>
-              ))}
-            </SortableContext>
-          </div>
-          <DragOverlay dropAnimation={dropAnimation}>
-            {activeDragCard ? (
-              <CardPreview card={activeDragCard} categories={board.categories} />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      ) : (
-        <TableView
-          columns={board.columns}
-          cards={board.cards}
-          categories={board.categories}
-          onEdit={(id) => setEditingCard({ id })}
-          onDelete={deleteCard}
-          activeFilters={activeFiltersSafe}
-          showHighPriorityOnly={showHighPriorityOnly}
-        />
-      )}
+                      return true;
+                    })}
+                  categories={board.categories}
+                  onAdd={() => handleCreate(column.id)}
+                  onEdit={(id) => setEditingCard({ id })}
+                  onDelete={deleteCard}
+                />
+              </div>
+            ))}
+          </SortableContext>
+        </div>
+        <DragOverlay dropAnimation={dropAnimation}>
+          {activeDragCard ? (
+            <CardPreview card={activeDragCard} categories={board.categories} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <UpsertCardModal
         open={!!editingCard}

@@ -269,7 +269,6 @@ export function getRootPages(pages: Record<string, Page>, workspaceId: string): 
 
 export const defaultWorkspaceState = (): WorkspaceState => {
   const workspaceId = "workspace-default";
-  const rootPageId = "page-root";
   const databasePageId = "page-database-default";
 
   return {
@@ -285,40 +284,13 @@ export const defaultWorkspaceState = (): WorkspaceState => {
       },
     ],
     pages: {
-      [rootPageId]: {
-        id: rootPageId,
-        workspaceId: workspaceId,
-        title: "Getting Started",
-        icon: "🏠",
-        type: "document",
-        position: 0,
-        collapsed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        content: [
-          {
-            id: "block-welcome",
-            type: "heading1",
-            content: "Welcome to your workspace!",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: "block-intro",
-            type: "paragraph",
-            content: "Start creating pages to organize your notes and databases.",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-      },
       [databasePageId]: {
         id: databasePageId,
         workspaceId: workspaceId,
         title: "Task Board",
         icon: "✅",
         type: "database",
-        position: 1,
+        position: 0,
         collapsed: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

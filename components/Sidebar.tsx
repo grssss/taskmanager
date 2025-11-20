@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  FileText,
   Table2,
   Search,
   MoreHorizontal,
@@ -29,6 +28,7 @@ import {
   reorderPages,
 } from "@/lib/pageUtils";
 import UserProfile from "@/components/UserProfile";
+import Dialog from "./Dialog";
 
 interface SidebarProps {
   workspaceState: WorkspaceState;
@@ -39,6 +39,20 @@ interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
+
+const countDescendants = (pages: Record<string, Page>, pageId: string): number => {
+  const stack = getPageChildren(pages, pageId);
+  let count = 0;
+
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current) continue;
+    count += 1;
+    stack.push(...getPageChildren(pages, current.id));
+  }
+
+  return count;
+};
 
 export default function Sidebar({
   workspaceState,
@@ -55,12 +69,12 @@ export default function Sidebar({
     x: number;
     y: number;
   } | null>(null);
-  const [showSubpageMenu, setShowSubpageMenu] = useState<string | null>(null);
   const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
   const [dropTargetPageId, setDropTargetPageId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<"before" | "after" | null>(null);
   const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [pagePendingDelete, setPagePendingDelete] = useState<Page | null>(null);
 
   // Detect mobile/iPhone
   useEffect(() => {
@@ -93,11 +107,10 @@ export default function Sidebar({
   // On mobile, always render the sidebar (visibility controlled by mobileOpen prop)
   // Don't return null here - we need the sidebar to slide in/out
 
-  const handleCreatePage = (type: "document" | "database", parentPageId?: string) => {
+  const handleCreatePage = (parentPageId?: string) => {
     const newPage = createPage(
       workspaceState.activeWorkspaceId,
       "Untitled",
-      type,
       parentPageId
     );
 
@@ -116,33 +129,45 @@ export default function Sidebar({
         activePageId: newPage.id,
       });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to create page");
+      alert(error instanceof Error ? error.message : "Failed to create board");
     }
   };
 
-  const handleDeletePage = (pageId: string) => {
-    if (!confirm("Delete this page and all its children?")) return;
+  const pendingDescendantCount = pagePendingDelete
+    ? countDescendants(workspaceState.pages, pagePendingDelete.id)
+    : 0;
 
+  const openDeleteDialog = (pageId: string) => {
+    const targetPage = workspaceState.pages[pageId];
+    if (!targetPage) return;
+    setPagePendingDelete(targetPage);
+  };
+
+  const closeDeleteDialog = () => setPagePendingDelete(null);
+
+  const confirmDelete = () => {
+    if (!pagePendingDelete) return;
     try {
-      const newState = deletePage(workspaceState, pageId);
+      const newState = deletePage(workspaceState, pagePendingDelete.id);
       onStateChange(newState);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete page");
+      alert(error instanceof Error ? error.message : "Failed to delete board");
+    } finally {
+      setPagePendingDelete(null);
     }
   };
-
   const handleRenamePage = (pageId: string, newTitle?: string) => {
     const page = workspaceState.pages[pageId];
 
     // If no new title provided, use prompt (for context menu)
-    const title = newTitle !== undefined ? newTitle : prompt("New title:", page?.title || "");
+    const title = newTitle !== undefined ? newTitle : prompt("New board name:", page?.title || "");
     if (!title || !page) return;
 
     try {
       const newState = updatePage(workspaceState, pageId, { title });
       onStateChange(newState);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to rename page");
+      alert(error instanceof Error ? error.message : "Failed to rename board");
     }
   };
 
@@ -240,12 +265,10 @@ export default function Sidebar({
     workspaceState.activeWorkspaceId
   );
   const databaseRootPages = rootPages.filter((page) => page.type === "database");
-  const documentRootPages = rootPages.filter((page) => page.type === "document");
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const matchesSearch = (page: Page) =>
     !normalizedQuery || page.title.toLowerCase().includes(normalizedQuery);
   const visibleDatabasePages = databaseRootPages.filter(matchesSearch);
-  const visibleDocumentPages = documentRootPages.filter(matchesSearch);
 
   // Debug logging
   console.log('[Sidebar] Active Workspace ID:', workspaceState.activeWorkspaceId);
@@ -302,7 +325,7 @@ export default function Sidebar({
             />
             <input
               type="text"
-              placeholder="Search pages..."
+              placeholder="Search boards..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/15 bg-zinc-900/70 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
@@ -314,12 +337,12 @@ export default function Sidebar({
         <div className="flex-1 overflow-y-auto p-2 space-y-4">
           <div className="flex items-center justify-between px-2 relative">
             <span className="text-xs text-zinc-400 uppercase font-medium tracking-wide">
-              Databases
+              Boards
             </span>
             <button
-              onClick={() => handleCreatePage("database")}
+              onClick={() => handleCreatePage()}
               className="p-1 rounded hover:bg-zinc-800 transition-colors"
-              title="New database page"
+              title="New board"
             >
               <Plus size={14} />
             </button>
@@ -353,55 +376,7 @@ export default function Sidebar({
             ))}
             {visibleDatabasePages.length === 0 && (
               <div className="text-xs text-zinc-500 px-2 py-1.5 rounded-md bg-white/5">
-                {normalizedQuery ? "No matching databases" : "No databases yet"}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between px-2 pt-2">
-            <span className="text-xs text-zinc-400 uppercase font-medium tracking-wide">
-              Documents
-            </span>
-            <button
-              onClick={() => handleCreatePage("document")}
-              className="p-1 rounded hover:bg-zinc-800 transition-colors"
-              title="New document page"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-
-          <div className="space-y-0.5 px-0.5">
-            {visibleDocumentPages.map((page) => (
-              <PageTreeItem
-                key={page.id}
-                page={page}
-                pages={workspaceState.pages}
-                activePageId={workspaceState.activePageId}
-                onSelect={onPageSelect}
-                onToggleCollapsed={handleToggleCollapsed}
-                onContextMenu={(pageId, x, y) => setContextMenu({ pageId, x, y })}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onDragEnd={handleDragEnd}
-                draggedPageId={draggedPageId}
-                dropTargetPageId={dropTargetPageId}
-                dropPosition={dropPosition}
-                renamingPageId={renamingPageId}
-                onStartRename={setRenamingPageId}
-                onRename={handleRenamePage}
-                level={0}
-                variant="document"
-                allowedChildTypes={["document"]}
-                onAddChild={(parentId) => handleCreatePage("document", parentId)}
-                showAddButton
-              />
-            ))}
-            {visibleDocumentPages.length === 0 && (
-              <div className="text-xs text-zinc-500 px-2 py-1.5 rounded-md bg-white/5">
-                {normalizedQuery ? "No matching documents" : "No documents yet"}
+                {normalizedQuery ? "No matching boards" : "No boards yet"}
               </div>
             )}
           </div>
@@ -429,20 +404,10 @@ export default function Sidebar({
               <Edit2 size={14} />
               Rename
             </button>
-            <button
-              onClick={() => {
-                setShowSubpageMenu(contextMenu.pageId);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
-            >
-              <Plus size={14} />
-              Add subpage
-              <ChevronRight size={14} className="ml-auto" />
-            </button>
             <div className="border-t border-white/10 my-1" />
             <button
               onClick={() => {
-                handleDeletePage(contextMenu.pageId);
+                openDeleteDialog(contextMenu.pageId);
                 setContextMenu(null);
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 text-left"
@@ -454,48 +419,50 @@ export default function Sidebar({
         </>
       )}
 
-      {/* Subpage type menu */}
-      {showSubpageMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => {
-              setShowSubpageMenu(null);
-              setContextMenu(null);
-            }}
-          />
-          <div
-            className="fixed z-50 bg-zinc-800 border border-white/10 rounded-md shadow-lg py-1 min-w-[180px]"
-            style={{
-              left: contextMenu ? contextMenu.x + 170 : 0,
-              top: contextMenu ? contextMenu.y + 30 : 0
-            }}
-          >
+      <Dialog
+        open={Boolean(pagePendingDelete)}
+        onClose={closeDeleteDialog}
+        title={
+          pagePendingDelete ? `Delete "${pagePendingDelete.title}"?` : "Delete board"
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-300">
+            This action will permanently delete the board and all of its tasks.
+            {pagePendingDelete && (
+              <>
+                {" "}
+                {pendingDescendantCount > 0
+                  ? `It will also remove ${pendingDescendantCount} nested ${
+                      pendingDescendantCount === 1 ? "board" : "boards"
+                    }.`
+                  : "There are no nested boards."}
+              </>
+            )}
+          </p>
+          <div className="text-xs text-zinc-500 border border-dashed border-white/10 rounded-lg p-3">
+            <p className="font-semibold text-zinc-100">
+              Page ID: {pagePendingDelete?.id}
+            </p>
+            <p>Make sure you have backups if this is important content.</p>
+          </div>
+          <div className="flex justify-end gap-3">
             <button
-              onClick={() => {
-                handleCreatePage("document", showSubpageMenu);
-                setShowSubpageMenu(null);
-                setContextMenu(null);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
+              onClick={closeDeleteDialog}
+              className="px-4 py-2 rounded-md border border-white/10 text-sm text-zinc-200 hover:border-zinc-300 transition"
             >
-              <FileText size={14} />
-              Document Page
+              Cancel
             </button>
             <button
-              onClick={() => {
-                handleCreatePage("database", showSubpageMenu);
-                setShowSubpageMenu(null);
-                setContextMenu(null);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-700 text-left"
+              onClick={confirmDelete}
+              className="px-4 py-2 rounded-md bg-red-600 text-sm text-white hover:bg-red-500 transition"
             >
-              <Table2 size={14} />
-              Database Page
+              Delete board
             </button>
           </div>
-        </>
-      )}
+        </div>
+      </Dialog>
+
     </>
   );
 }
@@ -519,7 +486,7 @@ interface PageTreeItemProps {
   onStartRename: (pageId: string | null) => void;
   onRename: (pageId: string, newTitle: string) => void;
   level: number;
-  variant?: "default" | "database" | "document";
+  variant?: "default" | "database";
   hideChildren?: boolean;
   allowedChildTypes?: Page["type"][];
   onAddChild?: (parentId: string) => void;
@@ -561,8 +528,7 @@ function PageTreeItem({
   const isDragging = draggedPageId === page.id;
   const isDropTarget = dropTargetPageId === page.id;
   const isRenaming = renamingPageId === page.id;
-  const showToggle =
-    !hideChildren && (hasChildren || variant === "document");
+  const showToggle = !hideChildren && hasChildren;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -645,11 +611,7 @@ function PageTreeItem({
         )}
 
         <span className="shrink-0">
-          {page.type === "database" ? (
-            <Table2 size={14} />
-          ) : (
-            <FileText size={14} />
-          )}
+          <Table2 size={14} />
         </span>
 
         {isRenaming ? (

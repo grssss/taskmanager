@@ -28,7 +28,6 @@ export function convertProjectToWorkspace(
 ): { workspace: Workspace; pages: Record<string, Page> } {
   const now = new Date().toISOString();
   const workspaceId = `workspace-${uid()}`;
-  const rootPageId = `page-${uid()}`;
   const databasePageId = `page-${uid()}`;
 
   // Create workspace
@@ -38,35 +37,6 @@ export function convertProjectToWorkspace(
     icon: "📋",
     createdAt: now,
     updatedAt: now,
-  };
-
-  // Create a welcome document page (root)
-  const rootPage: Page = {
-    id: rootPageId,
-    workspaceId,
-    title: `Welcome to ${workspace.name}`,
-    icon: "👋",
-    type: "document",
-    position: 0,
-    collapsed: false,
-    createdAt: now,
-    updatedAt: now,
-    content: [
-      {
-        id: `block-${uid()}`,
-        type: "heading1",
-        content: `Welcome to ${workspace.name}!`,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: `block-${uid()}`,
-        type: "paragraph",
-        content: "Your tasks have been migrated to the database page below.",
-        createdAt: now,
-        updatedAt: now,
-      },
-    ],
   };
 
   // Create database page with existing board data
@@ -81,7 +51,7 @@ export function convertProjectToWorkspace(
     title: `${project.name} Tasks`,
     icon: "✅",
     type: "database",
-    position: 1,
+    position: 0,
     collapsed: false,
     createdAt: now,
     updatedAt: now,
@@ -91,7 +61,6 @@ export function convertProjectToWorkspace(
   return {
     workspace,
     pages: {
-      [rootPageId]: rootPage,
       [databasePageId]: databasePage,
     },
   };
@@ -117,37 +86,6 @@ export function migrateAppStateToWorkspaceState(
     updatedAt: now,
   };
 
-  // Create a welcome document page (root)
-  const welcomePageId = `page-${uid()}`;
-  const welcomePage: Page = {
-    id: welcomePageId,
-    workspaceId,
-    title: "Welcome",
-    icon: "👋",
-    type: "document",
-    position: 0,
-    collapsed: false,
-    createdAt: now,
-    updatedAt: now,
-    content: [
-      {
-        id: `block-${uid()}`,
-        type: "heading1",
-        content: "Welcome to your workspace!",
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: `block-${uid()}`,
-        type: "paragraph",
-        content: "Your projects have been migrated to database pages. Click on each page in the sidebar to view your tasks.",
-        createdAt: now,
-        updatedAt: now,
-      },
-    ],
-  };
-  allPages[welcomePageId] = welcomePage;
-
   // Create a database page for each project
   const projectIcons = ["✅", "🎯", "💼", "📊", "🚀", "💡", "⭐", "🔥", "📈", "🎨"];
   let activeDatabasePageId: string | undefined;
@@ -166,7 +104,7 @@ export function migrateAppStateToWorkspaceState(
       title: project.name || `Project ${index + 1}`,
       icon: projectIcons[index % projectIcons.length],
       type: "database",
-      position: index + 1, // Start after welcome page
+      position: index,
       collapsed: false,
       createdAt: now,
       updatedAt: now,
@@ -183,7 +121,7 @@ export function migrateAppStateToWorkspaceState(
 
   // If no active page was found, use the first database page
   if (!activeDatabasePageId) {
-    activeDatabasePageId = Object.values(allPages).find(p => p.type === "database")?.id;
+    activeDatabasePageId = Object.values(allPages).find((p) => p.type === "database")?.id;
   }
 
   const migratedState: WorkspaceState = {

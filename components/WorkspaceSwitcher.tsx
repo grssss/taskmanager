@@ -94,7 +94,7 @@ export default function WorkspaceSwitcher({
     <div className="relative">
       <button
         onClick={() => setMenuOpen((prev) => !prev)}
-        className="flex items-center gap-2 bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 text-sm font-medium text-zinc-100 hover:border-white/30 transition-colors"
+        className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-zinc-100 hover:text-white transition-colors"
       >
         <span className="flex items-center gap-2">
           <span>{activeWorkspace.icon}</span>

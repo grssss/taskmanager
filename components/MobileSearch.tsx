@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, FileText, Table2, X } from "lucide-react";
-import { WorkspaceState, Page } from "@/lib/types";
+import { Search, Table2, X } from "lucide-react";
+import { WorkspaceState } from "@/lib/types";
 
 interface MobileSearchProps {
   workspaceState: WorkspaceState;
@@ -19,6 +19,7 @@ export default function MobileSearch({
 
   // Filter pages based on search query
   const filteredPages = Object.values(workspaceState.pages).filter((page) => {
+    if (page.type !== "database") return false;
     if (!searchQuery.trim()) return true;
     return page.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -34,7 +35,7 @@ export default function MobileSearch({
           />
           <input
             type="text"
-            placeholder="Search pages..."
+            placeholder="Search boards..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
@@ -65,18 +66,14 @@ export default function MobileSearch({
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors text-left"
               >
                 <div className="flex items-center justify-center text-zinc-400">
-                  {page.type === "database" ? (
-                    <Table2 size={20} />
-                  ) : (
-                    <FileText size={20} />
-                  )}
+                  <Table2 size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-100 truncate">
                     {page.title}
                   </p>
                   <p className="text-xs text-zinc-500 truncate">
-                    {page.type === "database" ? "Database" : "Document"}
+                    Board
                   </p>
                 </div>
               </button>
@@ -84,7 +81,7 @@ export default function MobileSearch({
           </div>
         ) : (
           <div className="text-center py-8 text-zinc-500 text-sm">
-            {searchQuery ? "No pages found" : "Start typing to search"}
+            {searchQuery ? "No boards found" : "Start typing to search"}
           </div>
         )}
       </div>
