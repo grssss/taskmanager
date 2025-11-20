@@ -209,7 +209,14 @@ export function recoverFromCorruptedState(
       workspaces?: Array<{ id: string; name: string }>;
     };
     const pages = candidate.pages;
-    const workspaces = candidate.workspaces ?? [];
+    const workspacesRaw = candidate.workspaces ?? [];
+    
+    // Map workspaces to include required createdAt and updatedAt properties
+    const workspaces = workspacesRaw.map((w) => ({
+      ...w,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
 
     if (workspaces.length > 0 && Object.keys(pages).length > 0) {
       const reconstructed: WorkspaceState = {
