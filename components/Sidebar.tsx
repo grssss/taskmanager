@@ -111,6 +111,7 @@ export default function Sidebar({
     const newPage = createPage(
       workspaceState.activeWorkspaceId,
       "Untitled",
+      "database",
       parentPageId
     );
 
