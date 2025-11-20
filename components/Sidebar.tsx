@@ -634,7 +634,11 @@ function PageTreeItem({
             className="flex-1 bg-zinc-800 border border-white/20 rounded px-1 py-0.5 text-sm outline-none focus:ring-1 focus:ring-white/40"
           />
         ) : (
-          <span className="truncate flex-1 text-left">
+          <span 
+            className="truncate flex-1 text-left"
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
             {page.title}
           </span>
         )}
