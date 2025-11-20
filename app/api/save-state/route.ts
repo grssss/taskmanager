@@ -34,9 +34,8 @@ export async function POST(request: Request) {
       updateData.schema_version = updateData.schema_version ?? 1
     }
 
-    const { error } = await supabase
-      .from('user_data')
-      .update(updateData as any)
+    const { error } = await (supabase.from('user_data') as any)
+      .update(updateData)
       .eq('user_id', userId)
 
     if (error) {

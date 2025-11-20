@@ -140,8 +140,8 @@ export function useWorkspaceStorage(): [
 
       try {
         // Try to load both workspace_state (new) and app_state (legacy) data
-        const { data, error } = await supabase
-          .from('user_data')
+        const { data, error } = await (supabase
+          .from('user_data') as any)
           .select('workspace_state, app_state, schema_version, state_backup')
           .eq('user_id', user.id)
           .single()
@@ -157,18 +157,18 @@ export function useWorkspaceStorage(): [
             if (localData) {
               try {
                 const parsed = JSON.parse(localData)
-            const { state: migratedState, migrated: wasMigrated } = ensureWorkspaceState(parsed)
+                const { state: migratedState, migrated: wasMigrated } = ensureWorkspaceState(parsed)
 
-            console.log('Migrating data from localStorage to Supabase...')
-            const insertPayload: UserDataInsert = {
-              user_id: user.id,
-              app_state: migratedState as unknown as UserDataInsert['app_state'],
-              workspace_state: migratedState as unknown as UserDataInsert['workspace_state'],
-              schema_version: 2,
-            }
-            const { error: insertError } = await supabase
-              .from('user_data')
-              .insert(insertPayload)
+                console.log('Migrating data from localStorage to Supabase...')
+                const insertPayload: UserDataInsert = {
+                  user_id: user.id,
+                  app_state: migratedState as unknown as UserDataInsert['app_state'],
+                  workspace_state: migratedState as unknown as UserDataInsert['workspace_state'],
+                  schema_version: 2,
+                }
+                const { error: insertError } = await (supabase
+                  .from('user_data') as any)
+                  .insert(insertPayload)
 
                 if (insertError) {
                   logSupabaseError('Failed to insert migrated data', insertError, {
@@ -190,17 +190,17 @@ export function useWorkspaceStorage(): [
               }
             } else {
               // No local data either, insert initial value
-            console.log('Creating new user data record...')
-            const initialState = defaultWorkspaceState()
-            const insertPayload: UserDataInsert = {
-              user_id: user.id,
-              app_state: initialState as unknown as UserDataInsert['app_state'],
-              workspace_state: initialState as unknown as UserDataInsert['workspace_state'],
-              schema_version: 2,
-            }
-            const { error: insertError, data: insertData } = await supabase
-              .from('user_data')
-              .insert(insertPayload)
+              console.log('Creating new user data record...')
+              const initialState = defaultWorkspaceState()
+              const insertPayload: UserDataInsert = {
+                user_id: user.id,
+                app_state: initialState as unknown as UserDataInsert['app_state'],
+                workspace_state: initialState as unknown as UserDataInsert['workspace_state'],
+                schema_version: 2,
+              }
+              const { error: insertError, data: insertData } = await (supabase
+                .from('user_data') as any)
+                .insert(insertPayload)
 
               if (insertError) {
                 logSupabaseError('Failed to create initial data', insertError, {
@@ -251,8 +251,8 @@ export function useWorkspaceStorage(): [
             }
 
             try {
-              await supabase
-                .from('user_data')
+              await (supabase
+                .from('user_data') as any)
                 .update({
                   workspace_state: loadedState,
                   app_state: loadedState,
@@ -311,8 +311,8 @@ export function useWorkspaceStorage(): [
           schema_version: 2,
           updated_at: new Date().toISOString(),
         }
-        const { error } = await supabase
-          .from('user_data')
+        const { error } = await (supabase
+          .from('user_data') as any)
           .update(updatePayload)
           .eq('user_id', user.id)
 

@@ -41,8 +41,8 @@ export function useSupabaseStorage<T extends AppState>(
       }
 
       try {
-        const { data, error } = await supabase
-          .from('user_data')
+        const { data, error } = await (supabase
+          .from('user_data') as any)
           .select('app_state')
           .eq('user_id', user.id)
           .single()
@@ -68,8 +68,8 @@ export function useSupabaseStorage<T extends AppState>(
                   user_id: user.id,
                   app_state: parsed as unknown as Database['public']['Tables']['user_data']['Insert']['app_state'],
                 }
-                const { error: insertError } = await supabase
-                  .from('user_data')
+                const { error: insertError } = await (supabase
+                  .from('user_data') as any)
                   .insert(insertPayload)
 
                 if (insertError) {
@@ -92,8 +92,8 @@ export function useSupabaseStorage<T extends AppState>(
                 user_id: user.id,
                 app_state: initialValue as unknown as Database['public']['Tables']['user_data']['Insert']['app_state'],
               }
-              const { error: insertError } = await supabase
-                .from('user_data')
+              const { error: insertError } = await (supabase
+                .from('user_data') as any)
                 .insert(insertPayload)
 
               if (insertError) {
@@ -145,8 +145,8 @@ export function useSupabaseStorage<T extends AppState>(
           app_state: dataToSave as unknown as Database['public']['Tables']['user_data']['Update']['app_state'],
           updated_at: new Date().toISOString(),
         }
-        const { error } = await supabase
-          .from('user_data')
+        const { error } = await (supabase
+          .from('user_data') as any)
           .update(updatePayload)
           .eq('user_id', user.id)
 
