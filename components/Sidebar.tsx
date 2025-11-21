@@ -637,8 +637,6 @@ function PageTreeItem({
         ) : (
           <span 
             className="truncate flex-1 text-left"
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => e.stopPropagation()}
           >
             {page.title}
           </span>
