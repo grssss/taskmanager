@@ -227,6 +227,14 @@ export default function Home() {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           mobileOpen={false}
           onMobileClose={() => {}}
+          workspaceSwitcherSlot={
+            <WorkspaceSwitcher
+              workspaceState={workspaceState}
+              onWorkspaceChange={handleWorkspaceChange}
+              onWorkspaceCreate={handleWorkspaceCreate}
+              onWorkspaceEdit={handleWorkspaceEdit}
+            />
+          }
         />
       )}
 
@@ -274,14 +282,6 @@ export default function Home() {
               workspaceState={workspaceState}
               onStateChange={setWorkspaceState}
               onPageSelect={handlePageSelect}
-              workspaceSwitcherSlot={
-                <WorkspaceSwitcher
-                  workspaceState={workspaceState}
-                  onWorkspaceChange={handleWorkspaceChange}
-                  onWorkspaceCreate={handleWorkspaceCreate}
-                  onWorkspaceEdit={handleWorkspaceEdit}
-                />
-              }
             />
           )}
         </div>

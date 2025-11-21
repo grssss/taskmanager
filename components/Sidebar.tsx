@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import {
   ChevronDown,
   ChevronRight,
   Plus,
   Table2,
-  Search,
   MoreHorizontal,
   Trash2,
   Edit2,
@@ -38,6 +37,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  workspaceSwitcherSlot?: ReactNode;
 }
 
 const countDescendants = (pages: Record<string, Page>, pageId: string): number => {
@@ -62,8 +62,8 @@ export default function Sidebar({
   onToggleCollapse,
   mobileOpen = false,
   onMobileClose,
+  workspaceSwitcherSlot,
 }: SidebarProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
     pageId: string;
     x: number;
@@ -266,10 +266,7 @@ export default function Sidebar({
     workspaceState.activeWorkspaceId
   );
   const databaseRootPages = rootPages.filter((page) => page.type === "database");
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const matchesSearch = (page: Page) =>
-    !normalizedQuery || page.title.toLowerCase().includes(normalizedQuery);
-  const visibleDatabasePages = databaseRootPages.filter(matchesSearch);
+  const visibleDatabasePages = databaseRootPages;
 
   // Debug logging
   console.log('[Sidebar] Active Workspace ID:', workspaceState.activeWorkspaceId);
@@ -318,20 +315,11 @@ export default function Sidebar({
             )}
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-2 top-2 text-zinc-400"
-            />
-            <input
-              type="text"
-              placeholder="Search boards..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-white/15 bg-zinc-900/70 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-            />
-          </div>
+          {workspaceSwitcherSlot && (
+            <div className="mt-2">
+              {workspaceSwitcherSlot}
+            </div>
+          )}
         </div>
 
         {/* Pages list */}
@@ -377,7 +365,7 @@ export default function Sidebar({
             ))}
             {visibleDatabasePages.length === 0 && (
               <div className="text-xs text-zinc-500 px-2 py-1.5 rounded-md bg-white/5">
-                {normalizedQuery ? "No matching boards" : "No boards yet"}
+                No boards yet
               </div>
             )}
           </div>

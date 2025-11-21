@@ -4,14 +4,13 @@ import { WorkspaceState, isDatabasePage } from "@/lib/types";
 import { getPagePath } from "@/lib/types";
 import DatabasePageView from "./DatabasePageView";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect } from "react";
 
 interface PageCanvasProps {
   workspaceState: WorkspaceState;
   onStateChange: (state: WorkspaceState) => void;
   onPageSelect: (pageId: string) => void;
   onBackClick?: () => void;
-  workspaceSwitcherSlot?: ReactNode;
 }
 
 export default function PageCanvas({
@@ -19,7 +18,6 @@ export default function PageCanvas({
   onStateChange,
   onPageSelect,
   onBackClick,
-  workspaceSwitcherSlot,
 }: PageCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -108,9 +106,6 @@ export default function PageCanvas({
               </div>
             )}
           </div>
-          {!isMobile && workspaceSwitcherSlot && (
-            <div className="shrink-0">{workspaceSwitcherSlot}</div>
-          )}
         </div>
       </div>
 
